@@ -10,22 +10,30 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.xml.bind.JAXBException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.javastro.ivoa.entities.resource.Creator;
-import org.javastro.ivoa.entities.resource.ResourceName;
+import org.javastro.ivoa.entities.resource.*;
 import org.javastro.ivoa.entities.resource.registry.Authority;
 import org.javastro.ivoa.entities.IvoaJAXBUtils;
+import org.javastro.ivoa.entities.resource.registry.Harvest;
+import org.javastro.ivoa.entities.resource.registry.OAIHTTP;
 import org.javastro.ivoa.registry.internal.RegistryQueryInterface;
 import org.javastro.ivoa.registry.internal.RegistryStoreInterface;
 import org.jboss.logging.Logger;
 import org.xml.sax.SAXException;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 @ApplicationScoped
 public class Registry {
 
+    @ConfigProperty(name="ivoa.registry.baseAddress")
+    URL baseUrl;
 
     @ConfigProperty(name="ivoa.registry.authority", defaultValue = "authority")
     String mainAuthority;
@@ -37,8 +45,10 @@ public class Registry {
 
     @ConfigProperty(name="ivoa.dc.contactAddress")
     String contactAddress;
-    @ConfigProperty(name="ivoa.dc.contactEmail")
-    String contactEmail;
+   @ConfigProperty(name="ivoa.dc.contactEmail")
+   String contactEmail;
+   @ConfigProperty(name="ivoa.dc.contactTelephone")
+   String contactTelephone;
 
     Set<Authority> managedAuthorities;
     org.javastro.ivoa.entities.resource.registry.Registry thisRegistry;
@@ -66,6 +76,7 @@ public class Registry {
           authority.setIdentifier("ivo://"+mainAuthority);
           Creator c = authority.getCuration().getCreators().get(0);
           c.setName(ResourceName.builder().withValue(organizationName).build());
+          setContact(authority);
           registryStoreInterface.create(xmlUtils.marshall(authority));
        } catch (JAXBException | IOException | SAXException e) {
           throw new RuntimeException("cannot create authority",e); //IMPL this is probably terminal at this stage.
@@ -74,9 +85,25 @@ public class Registry {
        try {
           thisRegistry = IvoaJAXBUtils.unmarshall(Objects.requireNonNull(this.getClass().getResourceAsStream("/RegistryTemplate.xml")), org.javastro.ivoa.entities.resource.registry.Registry.class);
           thisRegistry.setIdentifier("ivo://"+mainAuthority+"/Registry");
+          setContact(thisRegistry);
+          List<Capability> caps = thisRegistry.getCapabilities();
+          caps.clear();
+          caps.add(Harvest.builder().withStandardID("ivo://ivoa.net/std/Registry")
+                      .addInterfaces(List.of(
+                            OAIHTTP.builder()
+                                  .withRole("std")
+                                  .addAccessURLs(List.of(
+                                        new AccessURL(baseUrl.toURI().resolve(new URI("./oai")).toString(),"base")
+                                  ))
+                                  .build()
+                      ))
+                .build()
+          );
+
           this.managedAuthorities = Set.of(authority);
+
           registryStoreInterface.create(xmlUtils.marshall(thisRegistry));
-       } catch (JAXBException | SAXException | IOException e) {
+       } catch (JAXBException | SAXException | IOException | URISyntaxException e) {
           throw new RuntimeException("cannot create registry record",e);
        }
 
@@ -138,4 +165,16 @@ public class Registry {
       return registryQueryInterface;
    }
 
+
+   private void setContact(Resource res) {
+      Curation cur = res.getCuration();
+      Contact contact = cur.getContacts().get(0);
+      contact.setAddress(contactAddress);
+      contact.setEmail(contactEmail);
+      contact.setTelephone(contactTelephone);
+
+      ResourceName name = new ResourceName();
+      name.setValue(contactName);
+      contact.setName(name);
+   }
 }

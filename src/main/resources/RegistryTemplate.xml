@@ -28,11 +28,5 @@
         <referenceURL>TBC</referenceURL>
     </content>
     <rights>public</rights>
-    <capability standardID="ivo://ivoa.net/std/Registry" xsi:type="vg:Harvest">
-        <interface role="std" xsi:type="vg:OAIHTTP">
-            <accessURL use="base">TBC</accessURL>
-        </interface>
-        <maxRecords>500</maxRecords>
-    </capability>
     <full>false</full>
 </ri:Resource>
