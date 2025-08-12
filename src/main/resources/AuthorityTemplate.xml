@@ -1,0 +1,31 @@
+<ri:Resource xmlns:ri="http://www.ivoa.net/xml/RegistryInterface/v1.0"
+             xmlns:vg="http://www.ivoa.net/xml/VORegistry/v1.0"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             created="2012-12-06T15:16:14Z"
+             status="active"
+             updated="2016-07-11T12:11:04Z"
+             xsi:type="vg:Authority">
+    <title>Authority</title>
+    <shortName>PubReg</shortName>
+    <identifier>ivo://authority</identifier>
+    <curation>
+        <publisher>The staff at ??</publisher>
+        <creator>
+            <name>The ?? data center team</name>
+            <logo></logo>
+        </creator>
+        <date role="updated">2023-05-05T11:31:46Z</date>
+        <contact>
+            <name>contact name</name>
+            <address>contact address</address>
+            <email>contact email</email>
+            <telephone>contact telephone</telephone>
+        </contact>
+    </curation>
+    <content>
+        <subject>Authority</subject>
+        <description>The registry authority under which this registry publishes</description>
+        <referenceURL></referenceURL>
+    </content>
+    <managingOrg ivo-id="ivo://anorg"/>
+</ri:Resource>

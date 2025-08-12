@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ri:VOResources from="1" more="false" numberReturned="1"
+                xmlns:ri="http://www.ivoa.net/xml/RegistryInterface/v1.0"
+                xmlns:vr="http://www.ivoa.net/xml/VOResource/v1.0"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xmlns:vg="http://www.ivoa.net/xml/VORegistry/v1.0"
+                xmlns:vs="http://www.ivoa.net/xml/VODataService/v1.1"
+                xmlns:sia="http://www.ivoa.net/xml/SIA/v1.1"
+                xmlns:stc="http://www.ivoa.net/xml/STC/stc-v1.30.xsd"
+                xmlns:slap="http://www.ivoa.net/xml/SLAP/v1.0"
+                xmlns:tr="http://www.ivoa.net/xml/TAPRegExt/v1.0"
+                xmlns:xlink="http://www.w3.org/1999/xlink"
+ />

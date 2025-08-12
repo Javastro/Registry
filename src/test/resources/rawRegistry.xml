@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ri:Resource xsi:type="vg:Registry" created="2012-12-06T15:16:14Z" updated="2016-07-11T12:11:04Z" status="active"
+             xmlns:stc="http://www.ivoa.net/xml/STC/stc-v1.30.xsd" xmlns:sia="http://www.ivoa.net/xml/SIA/v1.1"
+             xmlns:va="http://www.ivoa.net/xml/VOApplication/v1.0rc1"
+             xmlns:vtm="http://www.ivoa.net/xml/VOSITables/v1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:vg="http://www.ivoa.net/xml/VORegistry/v1.0"
+             xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:oai="http://www.openarchives.org/OAI/2.0/"
+             xmlns:ri="http://www.ivoa.net/xml/RegistryInterface/v1.0" xmlns:ns17="http://www.w3.org/1999/xlink"
+             xmlns:ssap="http://www.ivoa.net/xml/SSA/v1.1" xmlns:ns16="http://www.ivoa.net/xml/ConeSearch/v1.0"
+             xmlns:vstd="http://www.ivoa.net/xml/StandardsRegExt/v1.0"
+             xmlns:vr="http://www.ivoa.net/xml/VOResource/v1.0" xmlns:vs="http://www.ivoa.net/xml/VODataService/v1.1"
+             xmlns:tr="http://www.ivoa.net/xml/TAPRegExt/v1.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <title>Publishing Registry</title>
+    <shortName>PubReg</shortName>
+    <identifier>ivo://authority/_pub_registry</identifier>
+    <curation>
+        <publisher>The staff at ??</publisher>
+        <creator>
+            <name>The ?? data center team</name>
+            <logo></logo>
+        </creator>
+        <date role="updated">2023-05-05T11:31:46Z</date>
+        <contact>
+            <name>contact name</name>
+            <address>contact address</address>
+            <email>contact email</email>
+            <telephone>contact telephone</telephone>
+        </contact>
+    </curation>
+    <content>
+        <subject>virtual-observatories</subject>
+        <description>The publishing registry for</description>
+        <referenceURL>TBC</referenceURL>
+    </content>
+    <rights>public</rights>
+    <capability xsi:type="vg:Harvest" standardID="ivo://ivoa.net/std/Registry">
+        <interface xsi:type="vg:OAIHTTP" role="std">
+            <accessURL use="base">TBC</accessURL>
+        </interface>
+        <maxRecords>500</maxRecords>
+    </capability>
+    <full>false</full>
+</ri:Resource>

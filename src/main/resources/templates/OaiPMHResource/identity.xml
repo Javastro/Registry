@@ -1,0 +1,18 @@
+<oai:OAI-PMH xmlns:oai="http://www.openarchives.org/OAI/2.0/" xmlns:ri="http://www.ivoa.net/xml/RegistryInterface/v1.0" xmlns:vg="http://www.ivoa.net/xml/VORegistry/v1.0"
+             xmlns:vr="http://www.ivoa.net/xml/VOResource/v1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <oai:responseDate>{oai.responseTime}</oai:responseDate>
+    <oai:request verb="Identify"/>
+    <oai:Identify>
+        <oai:repositoryName>ESAVO</oai:repositoryName>
+        <oai:baseURL>{oai.regOaiEndpoint}</oai:baseURL>
+        <oai:protocolVersion>2.0</oai:protocolVersion>
+        <oai:adminEmail>{oai.regAdminEmail}</oai:adminEmail>
+        <oai:earliestDatestamp>1970-01-01T00:00:00Z</oai:earliestDatestamp>
+        <oai:deletedRecord>transient</oai:deletedRecord>
+        <oai:granularity>YYYY-MM-DDThh:mm:ssZ</oai:granularity>
+        <oai:description>
+            <ri:Resource created="2009-02-15T12:00:00.000" status="active" updated="2023-03-17T05:54:12.379" xsi:type="vg:Registry">
+            </ri:Resource>
+        </oai:description>
+    </oai:Identify>
+</oai:OAI-PMH>

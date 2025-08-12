@@ -1,0 +1,26 @@
+<oai:OAI-PMH xmlns:oai="http://www.openarchives.org/OAI/2.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd">
+    <oai:responseDate>{oai.responseTime}</oai:responseDate>
+    <oai:request verb="{oai.requestVerb}" identifier="{oai.regIvorn}">{oai.regOaiEndpoint}</oai:request>
+    {#fragment id=formats}
+    <oai:ListMetadataFormats>
+        <oai:metadataFormat>
+            <oai:metadataPrefix>ivo_vor</oai:metadataPrefix>
+            <oai:schema>https://www.ivoa.net/xml/VOResource/v1.0</oai:schema>
+            <oai:metadataNamespace>http://www.ivoa.net/xml/VOResource/v1.0</oai:metadataNamespace>
+        </oai:metadataFormat>
+        <oai:metadataFormat>
+            <oai:metadataPrefix>oai_dc</oai:metadataPrefix>
+            <oai:schema>https://www.openarchives.org/OAI/2.0/oai_dc.xsd</oai:schema>
+            <oai:metadataNamespace>http://www.openarchives.org/OAI/2.0/oai_dc/</oai:metadataNamespace>
+        </oai:metadataFormat>
+    </oai:ListMetadataFormats>
+    {/fragment}
+    {#fragment id=sets}
+    <oai:ListSets>
+        <oai:set>
+            <oai:setSpec>ivo_managed</oai:setSpec>
+            <oai:setName>The locally managed resources</oai:setName>
+        </oai:set>
+    </oai:ListSets>
+    {/fragment}
+</oai:OAI-PMH>
