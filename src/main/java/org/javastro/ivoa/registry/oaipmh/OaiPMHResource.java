@@ -8,6 +8,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.bind.JAXBException;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.javastro.ivoa.entities.Ivoid;
 import org.javastro.ivoa.entities.resource.registry.oaipmh.*;
@@ -46,11 +47,24 @@ public class OaiPMHResource {
 
     }
 
+    public  enum OAIVerb {
+       Identify,
+       ListSets,
+       ListMetadataFormats,
+       GetRecord,
+       ListRecords,
+       ListIdentifiers
+    }
+
     @GET
     @Produces(MediaType.TEXT_XML)
-    public Response action(@RestQuery("verb") String verb, @RestQuery String identifier, @RestQuery String metadataPrefix,
-    @RestQuery ZonedDateTime from, @RestQuery ZonedDateTime until, @RestQuery String set
-      //    , @RestQuery String resumptionToken // TODO add resumption token support
+    public Response action(@Parameter(required = true,description = "the action") @RestQuery("verb") OAIVerb verb,
+                           @RestQuery String identifier,
+                           @RestQuery String metadataPrefix,
+                           @RestQuery ZonedDateTime from,
+                           @RestQuery ZonedDateTime until,
+                           @RestQuery String set
+                           //    , @RestQuery String resumptionToken // TODO add resumption token support
     ) throws JAXBException, IOException, SAXException
     {
 
@@ -61,7 +75,7 @@ public class OaiPMHResource {
 
         switch (verb) {
 
-            case "Identify":
+           case Identify:
                 builder.withRequest(RequestType.builder().withValue("Identify").build());
                 IdentifyType ident = IdentifyType.builder().
                       withBaseURL(registry.getOAIUrl())
@@ -80,14 +94,14 @@ public class OaiPMHResource {
                 builder.withIdentify(ident);
                 OAIPMH response = builder.build();
                 return Response.ok(new OAIPMHResponse(xmlUtils.marshallOAI(response))).build();
-            case "ListSets":
+           case ListSets:
                 builder.withRequest(RequestType.builder().withValue("ListSets").build());
                 ListSetsType listSets = ListSetsType.builder()
                       .addSets(registry.getSets().stream().map(RegistrySet::asOAIPMH).toList())
                       .build();
                 builder.withListSets(listSets);
                 return Response.ok(new OAIPMHResponse(xmlUtils.marshallOAI(builder.build()))).build();
-            case "ListMetadataFormats":
+           case ListMetadataFormats:
 
                 builder.withRequest(RequestType.builder().withValue("ListMetadataFormats").build());
                 ListMetadataFormatsType listMeta = ListMetadataFormatsType.builder()
@@ -100,7 +114,7 @@ public class OaiPMHResource {
                 builder.withListMetadataFormats(listMeta);
                 return Response.ok(new OAIPMHResponse(xmlUtils.marshallOAI(builder.build()))).build();
 
-            case "GetRecord":
+           case GetRecord:
                 Ivoid id = null ;
                try {
                    id = new Ivoid(identifier);
@@ -122,12 +136,36 @@ public class OaiPMHResource {
                 }
 
 
-            case "ListRecords":
-                return Response.ok(new OAIPMHResponse(qi.oaiListRecords(from, until, set, metadataPrefix))).build();
-            case "ListIdentifiers":
-                 return Response.ok(new OAIPMHResponse(qi.oaiListIDs(from, until, set, metadataPrefix))).build();
+            case ListRecords:
+               if(metadataPrefix==null || !metadataPrefix.matches("ivo_vor|oai_dc"))
+               {
+                  errors.add(new OAIPMHerrorType(metadataPrefix==null?"no metadataPrefix specified must be 'ivo_vor' or 'oai_dc'": metadataPrefix+" is not valid",OAIPMHerrorcodeType.NO_METADATA_FORMATS));
+               }
+               if(!errors.isEmpty())
+               {
+                  builder.withRequest(RequestType.builder().withValue("ListRecords").withMetadataPrefix(metadataPrefix).withSet(set).build());
+                  builder.addErrors(errors);
+                  return Response.ok(new OAIPMHResponse(xmlUtils.marshallOAI(builder.build()))).build();
+               }
+               else {
+                  return Response.ok(new OAIPMHResponse(qi.oaiListRecords(from, until, set, metadataPrefix))).build();
+               }
+            case ListIdentifiers:
+               if(metadataPrefix==null || !metadataPrefix.matches("ivo_vor|oai_dc"))
+               {
+                  errors.add(new OAIPMHerrorType(metadataPrefix==null?"no metadataPrefix specified - must be 'ivo_vor' or 'oai_dc' ": metadataPrefix+" is not valid",OAIPMHerrorcodeType.NO_METADATA_FORMATS));
+               }
+               if(!errors.isEmpty())
+               {
+                  builder.withRequest(RequestType.builder().withValue("ListIdentifiers").withMetadataPrefix(metadataPrefix).withSet(set).build());
+                  builder.addErrors(errors);
+                  return Response.ok(new OAIPMHResponse(xmlUtils.marshallOAI(builder.build()))).build();
+               }
+               else {
+                  return Response.ok(new OAIPMHResponse(qi.oaiListIDs(from, until, set, metadataPrefix))).build();
+               }
             default:
-                builder.withRequest(RequestType.builder().withValue(verb).build());
+                builder.withRequest(RequestType.builder().withValue(verb.toString()).build());
                 builder.addErrors(new OAIPMHerrorType(verb +" is not recognised",OAIPMHerrorcodeType.BAD_VERB));
                 return Response.ok(new OAIPMHResponse(xmlUtils.marshallOAI(builder.build()))).build();
         }

@@ -11,6 +11,8 @@ import jakarta.inject.Inject;
 import jakarta.xml.bind.JAXBException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.javastro.ivoa.entities.resource.*;
+import org.javastro.ivoa.entities.resource.dataservice.InputParam;
+import org.javastro.ivoa.entities.resource.dataservice.ParamHTTP;
 import org.javastro.ivoa.entities.resource.registry.Authority;
 import org.javastro.ivoa.entities.IvoaJAXBUtils;
 import org.javastro.ivoa.entities.resource.registry.Harvest;
@@ -88,7 +90,8 @@ public class Registry {
           setContact(thisRegistry);
           List<Capability> caps = thisRegistry.getCapabilities();
           caps.clear();
-          caps.add(Harvest.builder().withStandardID("ivo://ivoa.net/std/Registry")
+          caps.addAll(List.of(Harvest.builder().withStandardID("ivo://ivoa.net/std/Registry")
+                            .withDescription("Harvesting")
                       .addInterfaces(List.of(
                             OAIHTTP.builder()
                                   .withRole("std")
@@ -97,7 +100,48 @@ public class Registry {
                                   ))
                                   .build()
                       ))
-                .build()
+                      .build(),
+                Capability.builder()
+                      .withDescription("VOSI Capabilities")
+                      .withStandardID("ivo://ivoa.net/std/VOSI#capabilities")
+                      .addInterfaces(List.of(
+                            ParamHTTP.builder().addAccessURLs( List.of(
+                                  new AccessURL(baseUrl.toURI().resolve(new URI("./vosi/capabilities")).toString(),"full")
+                            )).build()
+                      ))
+                      .build(),
+                Capability.builder()
+                      .withDescription("XQuery Interface")
+                      .addInterfaces(List.of(
+                            ParamHTTP.builder().addAccessURLs( List.of(
+                                  new AccessURL(baseUrl.toURI().resolve(new URI("./xquery")).toString(),"base")
+                            )).build()
+                      ))
+                      .build(),
+                Capability.builder()
+                      .withDescription("Resource Query Interface")
+                      .addInterfaces(List.of(
+                            ParamHTTP.builder().addAccessURLs( List.of(
+                                  new AccessURL(baseUrl.toURI().resolve(new URI("./resource")).toString(),"base")
+                            ))
+                                  .addParams(List.of(InputParam.builder()
+                                              .withName("id")
+                                              .withDescription("the id of the resource ")
+                                        .build()))
+                                  .build()
+
+                      ))
+                      .build(),
+                Capability.builder()
+                      .withDescription("Graphql Query Interface")
+                      .addInterfaces(List.of(
+                            ParamHTTP.builder().addAccessURLs( List.of(
+                                        new AccessURL(baseUrl.toURI().resolve(new URI("./graphql")).toString(),"base")
+                                  ))
+                                  .build()
+                      ))
+                      .build()
+                )
           );
 
           this.managedAuthorities = Set.of(authority);
@@ -106,8 +150,6 @@ public class Registry {
        } catch (JAXBException | SAXException | IOException | URISyntaxException e) {
           throw new RuntimeException("cannot create registry record",e);
        }
-
-
       registryQueryInterface.open();
 
     }
