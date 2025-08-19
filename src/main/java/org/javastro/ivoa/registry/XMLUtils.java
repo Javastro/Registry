@@ -5,12 +5,13 @@ package org.javastro.ivoa.registry;
  * Created on 06/08/2025 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBElement;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Marshaller;
+import graphql.com.google.common.collect.Lists;
+import jakarta.xml.bind.*;
 import net.sf.saxon.s9api.*;
 import org.javastro.ivoa.entities.IvoaJAXBContextFactory;
+import org.javastro.ivoa.entities.resource.Resource;
+import org.javastro.ivoa.entities.resource.registry.iface.ResourceInstance;
+import org.javastro.ivoa.entities.resource.registry.iface.VOResources;
 import org.javastro.ivoa.entities.resource.registry.oaipmh.OAIPMH;
 import org.javastro.ivoa.schema.Namespaces;
 import org.w3c.dom.Document;
@@ -21,7 +22,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamSource;
+import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.List;
 
 public class XMLUtils {
 
@@ -30,10 +33,12 @@ public class XMLUtils {
    private final Processor processor = new Processor(false);
    private final  XsltExecutable cleaningStylesheet;
    private final DocumentBuilder docBuilder;
+   private final JAXBContext context;
+   private final Unmarshaller unmarshaller;
 
    public XMLUtils() {
       try {
-         JAXBContext context = IvoaJAXBContextFactory.newInstance();
+         context = IvoaJAXBContextFactory.newInstance();
          marshaller = context.createMarshaller();
          marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
          marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
@@ -44,6 +49,7 @@ public class XMLUtils {
          dbf.setNamespaceAware(true);
          dbf.setValidating(false);
          docBuilder = dbf.newDocumentBuilder();
+         unmarshaller = context.createUnmarshaller();
       } catch (JAXBException | SaxonApiException e) {
          throw new RuntimeException(e); // should not happen in practice
       } catch (ParserConfigurationException e) {
@@ -56,6 +62,23 @@ public class XMLUtils {
       return marshallElement(new JAXBElement<T>(
             new QName(ns.getNamespace(), "Resource", ns.getPrefix()),
             (Class<T>) a.getClass(), a));
+   }
+
+   public List<Resource> unmarshal(String xml) throws JAXBException {
+      Object rv = unmarshaller.unmarshal(new StringReader(xml));
+      List<Resource> retval = Lists.newArrayList();
+      if (rv instanceof Resource r) {
+            retval = Lists.newArrayList(r);
+      }
+      else if (rv instanceof ResourceInstance r) {
+         retval = Lists.newArrayList(r.getValue());
+      }
+      else if (rv instanceof VOResources j) {
+         retval = j.getResources();
+      }
+
+      return retval;
+
    }
 
 
