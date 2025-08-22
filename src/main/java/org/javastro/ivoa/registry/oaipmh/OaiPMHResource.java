@@ -47,6 +47,7 @@ public class OaiPMHResource {
 
     }
 
+    // was nice to make the verb appear in OpenAPI - however non-matching did not work
     public  enum OAIVerb {
        Identify,
        ListSets,
@@ -58,8 +59,8 @@ public class OaiPMHResource {
 
     @GET
     @Produces(MediaType.TEXT_XML)
-    public Response action(@Parameter(required = true,description = "the action") @RestQuery("verb") OAIVerb verb,
-                           @RestQuery String identifier,
+    public Response action(@Parameter(required = true,description = "the action") @RestQuery("verb") String verb,
+                            @RestQuery String identifier,
                            @RestQuery String metadataPrefix,
                            @RestQuery ZonedDateTime from,
                            @RestQuery ZonedDateTime until,
@@ -75,15 +76,15 @@ public class OaiPMHResource {
 
         switch (verb) {
 
-           case Identify:
+           case "Identify":
                 builder.withRequest(RequestType.builder().withValue("Identify").build());
                 IdentifyType ident = IdentifyType.builder().
                       withBaseURL(registry.getOAIUrl())
+                      .withDeletedRecord(DeletedRecordType.NO)
                       .withRepositoryName(registry.getName())
                       .withProtocolVersion("2.0")
                       .withAdminEmails(registry.getContactEmail())
                       .withEarliestDatestamp("1970-01-01T00:00:00Z") //TODO actually put accurate value in?
-                      .withDeletedRecord(DeletedRecordType.TRANSIENT)
                       .withGranularity(GranularityType.YYYY_MM_DD_THH_MM_SS_Z)
                       .withDescriptions(new DescriptionType(new JAXBElement<>(new QName(Namespaces.RI.getNamespace(),
                             "Resource",Namespaces.RI.getPrefix()),
@@ -94,27 +95,27 @@ public class OaiPMHResource {
                 builder.withIdentify(ident);
                 OAIPMH response = builder.build();
                 return Response.ok(new OAIPMHResponse(xmlUtils.marshallOAI(response))).build();
-           case ListSets:
+           case "ListSets":
                 builder.withRequest(RequestType.builder().withValue("ListSets").build());
                 ListSetsType listSets = ListSetsType.builder()
                       .addSets(registry.getSets().stream().map(RegistrySet::asOAIPMH).toList())
                       .build();
                 builder.withListSets(listSets);
                 return Response.ok(new OAIPMHResponse(xmlUtils.marshallOAI(builder.build()))).build();
-           case ListMetadataFormats:
+           case "ListMetadataFormats":
 
                 builder.withRequest(RequestType.builder().withValue("ListMetadataFormats").build());
                 ListMetadataFormatsType listMeta = ListMetadataFormatsType.builder()
                       .addMetadataFormats(List.of(
                             new MetadataFormatType("oai_dc","https://www.openarchives.org/OAI/2.0/oai_dc.xsd","http://www.openarchives.org/OAI/2.0/oai_dc"),
-                            new MetadataFormatType("ivo_vor","https://www.ivoa.net/xml/RegistryInterface/RegistryInterface-1.0.xsd","http://www.ivoa.net/xml/RegistryInterface/v1.0")
+                            new MetadataFormatType("ivo://authority.changeme/Registry","https://www.ivoa.net/xml/RegistryInterface/RegistryInterface-1.0.xsd","http://www.ivoa.net/xml/RegistryInterface/v1.0")
                       ))
                       .build();
 
                 builder.withListMetadataFormats(listMeta);
                 return Response.ok(new OAIPMHResponse(xmlUtils.marshallOAI(builder.build()))).build();
 
-           case GetRecord:
+           case "GetRecord":
                 Ivoid id = null ;
                try {
                    id = new Ivoid(identifier);
@@ -136,7 +137,7 @@ public class OaiPMHResource {
                 }
 
 
-            case ListRecords:
+            case "ListRecords":
                if(metadataPrefix==null || !metadataPrefix.matches("ivo_vor|oai_dc"))
                {
                   errors.add(new OAIPMHerrorType(metadataPrefix==null?"no metadataPrefix specified must be 'ivo_vor' or 'oai_dc'": metadataPrefix+" is not valid",OAIPMHerrorcodeType.NO_METADATA_FORMATS));
@@ -150,7 +151,7 @@ public class OaiPMHResource {
                else {
                   return Response.ok(new OAIPMHResponse(qi.oaiListRecords(from, until, set, metadataPrefix))).build();
                }
-            case ListIdentifiers:
+            case "ListIdentifiers":
                if(metadataPrefix==null || !metadataPrefix.matches("ivo_vor|oai_dc"))
                {
                   errors.add(new OAIPMHerrorType(metadataPrefix==null?"no metadataPrefix specified - must be 'ivo_vor' or 'oai_dc' ": metadataPrefix+" is not valid",OAIPMHerrorcodeType.NO_METADATA_FORMATS));
