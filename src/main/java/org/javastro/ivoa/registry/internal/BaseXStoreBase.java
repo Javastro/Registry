@@ -33,7 +33,10 @@ public abstract class BaseXStoreBase implements RegistryInterface{
           listRecordsXQuery = new String(s.readAllBytes());
           s=BaseXStoreBase.class.getResourceAsStream("/xquery/oaiIdentifiers.xq");
           assert s != null;
-          getRecordXQuery = new String(s.readAllBytes());
+          s=BaseXStoreBase.class.getResourceAsStream("/xquery/oaiGetRecord.xq");
+
+          assert s != null;
+          getRecordXQuery = new String(s.readAllBytes());;
 
        } catch (IOException e) {
           throw new RuntimeException(e);
