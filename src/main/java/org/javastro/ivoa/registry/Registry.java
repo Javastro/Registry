@@ -146,6 +146,11 @@ public class Registry {
 
           this.managedAuthorities = Set.of(authority);
 
+          List<String> auths = thisRegistry.getManagedAuthorities();
+          auths.clear();
+          auths.addAll(managedAuthorities.stream().map(Resource::getIdentifier).toList());
+
+
           registryStoreInterface.create(xmlUtils.marshall(thisRegistry));
        } catch (JAXBException | SAXException | IOException | URISyntaxException e) {
           throw new RuntimeException("cannot create registry record",e);
