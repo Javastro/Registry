@@ -29,3 +29,11 @@ this can be changed in a deployment by setting the following environment variabl
 ```shell
 QUARKUS_SECURITY_USERS_EMBEDDED_USERS__admin__ = betterpassword
 ```
+
+## Running in Docker
+
+An image called `javastro/publishing-registry` will be created and run with
+```shell
+./gradlew quarkusBuild 
+docker-compose up
+```
