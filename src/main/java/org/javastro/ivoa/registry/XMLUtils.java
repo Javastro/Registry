@@ -26,6 +26,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.List;
 
+//TODO replace this with similar from ivoacore:common
 public class XMLUtils {
 
    private final static Namespaces ns = Namespaces.RI;

@@ -1,9 +1,10 @@
-package org.javastro.ivoa.registry.oaipmh.client;
+package org.javastro.ivoa.registry.client;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.javastro.ivoa.entities.resource.Resource;
 import org.javastro.ivoa.entities.resource.registry.iface.ResourceInstance;
 import org.javastro.ivoa.entities.resource.registry.oaipmh.*;
+import org.javastro.ivoa.registry.oaipmh.client.OaiPMHClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

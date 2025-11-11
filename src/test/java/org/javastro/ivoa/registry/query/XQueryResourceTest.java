@@ -23,7 +23,7 @@ class XQueryResourceTest {
    }
 
    @Test
-   void trytowrite()
+   void trytowrite() //SHOULD not be allowed with the read-only permissions
    {
       given().when()
             .body("insert nodes <silly>mad</silly>\n" +

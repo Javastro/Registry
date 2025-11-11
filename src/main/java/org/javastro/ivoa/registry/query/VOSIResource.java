@@ -18,7 +18,7 @@ import org.javastro.ivoa.registry.Registry;
 import java.util.List;
 
 @Tag(name="VOSI", description = "the standard VOSI endpoints")
-@Path("vosi")
+@Path("VOSI")
 public class VOSIResource {
    @Inject
    Registry registry;
