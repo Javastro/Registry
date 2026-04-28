@@ -18,6 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.javastro.ivoa.registry.Registry;
+import org.javastro.ivoa.registry.harvesting.RofrHarvestService;
 import org.javastro.ivoa.schema.XMLValidator;
 
 import javax.xml.transform.stream.StreamSource;
@@ -34,6 +35,9 @@ public class AdminResource {
 
     @Inject
     Registry registry;
+
+    @Inject
+    RofrHarvestService rofrHarvestService;
 
     @Operation( summary = "adds resources to the registry",
           description = """
@@ -68,5 +72,22 @@ public class AdminResource {
                   .build();
         }
         return Response.accepted().build();
+    }
+
+    @Operation(summary = "Trigger an incremental harvest from RofR",
+          description = """
+          Immediately runs an incremental harvest from the IVOA Registry of Registries (RofR).
+          Only records that have changed since the last successful harvest are retrieved.
+          The first call always performs a full harvest.
+          """)
+    @POST
+    @Path("harvestRofr")
+    @RolesAllowed("update")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response harvestRofr() {
+        int count = rofrHarvestService.harvest();
+        return Response.accepted()
+              .entity("Harvested " + count + " records from RofR")
+              .build();
     }
 }
