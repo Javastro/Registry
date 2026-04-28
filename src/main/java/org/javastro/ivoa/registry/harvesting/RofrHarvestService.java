@@ -15,6 +15,7 @@ import org.jboss.logging.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Scheduled service that incrementally harvests resource records from the
@@ -41,7 +42,7 @@ public class RofrHarvestService {
     String rofrUrl;
 
     /** Timestamp of the last successful harvest; {@code null} triggers a full harvest. */
-    private volatile Instant lastHarvestTime = null;
+    private final AtomicReference<Instant> lastHarvestTime = new AtomicReference<>(null);
 
     private final XMLUtils xmlUtils = new XMLUtils();
 
@@ -62,7 +63,7 @@ public class RofrHarvestService {
      * @return the number of records successfully stored during this run.
      */
     public int harvest() {
-        Instant harvestFrom = lastHarvestTime;
+        Instant harvestFrom = lastHarvestTime.get();
         Instant harvestStart = Instant.now();
         int stored = 0;
 
@@ -87,7 +88,7 @@ public class RofrHarvestService {
                 }
             }
 
-            lastHarvestTime = harvestStart;
+            lastHarvestTime.set(harvestStart);
             log.infov("Harvest complete: stored {0} records from RofR", stored);
         } catch (Exception e) {
             log.errorv("Harvest from RofR failed: {0}", e.getMessage());
@@ -101,6 +102,6 @@ public class RofrHarvestService {
      * {@code null} if no harvest has been completed yet.
      */
     public Instant getLastHarvestTime() {
-        return lastHarvestTime;
+        return lastHarvestTime.get();
     }
 }
