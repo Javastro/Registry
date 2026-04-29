@@ -56,12 +56,14 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
 
     @Override
     public void open() {
-        // BaseX context is shared and opened by BasexStore; no separate open required here.
+        // BaseX lifecycle is managed by Registry.onStart() via BasexStore.open().
+        // HarvestSourceCatalog does not independently manage the BaseX database.
     }
 
     @Override
     public void close() {
-        // BaseX context is shared; HarvestSourceCatalog does not own it.
+        // BaseX lifecycle is managed by Registry.onStart() via BasexStore.open();
+        // HarvestSourceCatalog does not own the shared context and must not close it.
     }
 
     // -------------------------------------------------------------------------
@@ -220,8 +222,16 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
     // Persistence helpers
     // -------------------------------------------------------------------------
 
-    void persist() {
-        String xml = serializeToXml();
+    private void persist() {
+        doPersist(serializeToXml());
+    }
+
+    /**
+     * Writes the serialized catalog XML to BaseX.
+     * Subclasses (or anonymous subclasses in tests) may override this to suppress
+     * the database write, following the Template Method pattern.
+     */
+    protected void doPersist(String xml) {
         String putQ = "declare variable $xml as xs:string external; "
                 + "db:put(\"Registry\", parse-xml($xml), \"" + CATALOG_PATH + "\")";
         try (QueryProcessor p = new QueryProcessor(putQ, context)) {

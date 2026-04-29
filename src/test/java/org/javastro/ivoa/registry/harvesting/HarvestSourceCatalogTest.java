@@ -23,13 +23,14 @@ final class HarvestSourceCatalogTest {
 
     /**
      * Create an in-memory-only catalog with no BaseX backend.
-     * The {@code persist()} method is overridden with a no-op so tests that
-     * call mutating catalog operations do not attempt to write to a database.
+     * The {@link HarvestSourceCatalog#doPersist(String)} method is overridden with a
+     * no-op so tests that call mutating catalog operations do not attempt to write to
+     * a database.
      */
     static HarvestSourceCatalog inMemoryCatalog() {
         HarvestSourceCatalog cat = new HarvestSourceCatalog() {
             @Override
-            void persist() {
+            protected void doPersist(String xml) {
                 // no-op: tests are in-memory only, no BaseX access
             }
         };

@@ -12,6 +12,7 @@ import org.javastro.ivoa.entities.resource.Resource;
 import org.javastro.ivoa.entities.resource.Service;
 import org.javastro.ivoa.entities.resource.registry.Harvest;
 import org.javastro.ivoa.entities.resource.registry.OAIHTTP;
+import org.javastro.ivoa.entities.resource.registry.Registry;
 import org.jboss.logging.Logger;
 
 import java.net.URI;
@@ -171,7 +172,7 @@ public class RegistryDiscoveryService {
      * {@link Optional#empty()} otherwise.
      */
     Optional<String> findOaiUrl(Resource resource) {
-        if (!(resource instanceof org.javastro.ivoa.entities.resource.registry.Registry reg)) {
+        if (!(resource instanceof Registry reg)) {
             return Optional.empty();
         }
         for (Capability cap : reg.getCapabilities()) {
