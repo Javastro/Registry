@@ -44,14 +44,14 @@ public class HarvestClient {
       boolean retval = true;
       ListMetadataFormatsType mt = client.listMetadataFormats();
 
-      if(mt.getMetadataFormats().stream().noneMatch(m -> m.getMetadataPrefix().equals("ivo_vor")))
+      if(mt == null || mt.getMetadataFormats().stream().noneMatch(m -> m.getMetadataPrefix().equals("ivo_vor")))
       {
          retval = false;
          LOG.errorv("the Registry at {0} does not serve metadata format {1}",client.getUrl(), METADATA_PREFIX);
       }
 
       ListSetsType st = client.listSets();
-      if(st.getSets().stream().noneMatch(m -> m.getSetSpec().equals(IVO_MANAGED_SET)))
+      if(st == null || st.getSets().stream().noneMatch(m -> m.getSetSpec().equals(IVO_MANAGED_SET)))
       {
          retval = false;
          LOG.errorv("the Registry at {0} does not have a harvestable set {1}",client.getUrl(),IVO_MANAGED_SET );
@@ -86,6 +86,11 @@ public class HarvestClient {
       int cursor = 0;
       do {
          ListIdentifiersType li = client.listIdentifiers(resumptionToken==null?METADATA_PREFIX:null, IVO_MANAGED_SET, from, until, resumptionToken);
+         if (li == null) {
+            // OAI error response (e.g. noRecordsMatch) — no identifiers to harvest
+            LOG.infov("listIdentifiers returned no result (OAI error or empty response) for {0}", client.getUrl());
+            break;
+         }
          hh.addAll(li.getHeaders());
 
          if(li.getResumptionToken()!=null)
@@ -111,7 +116,14 @@ public class HarvestClient {
       int cursor = 0;
       do {
          ListRecordsType rec = client.listRecords(METADATA_PREFIX, IVO_MANAGED_SET, from, until, resumptionToken);
-         sr = Stream.concat(sr, rec.getRecords().stream().map(r->((ResourceInstance)r.getMetadata().getAny()).getValue()));
+         if (rec == null) {
+            // OAI error response (e.g. noRecordsMatch) — no records to harvest
+            LOG.infov("listRecords returned no result (OAI error or empty response) for {0}", client.getUrl());
+            break;
+         }
+         sr = Stream.concat(sr, rec.getRecords().stream()
+               .filter(r -> r.getMetadata() != null && r.getMetadata().getAny() instanceof ResourceInstance)
+               .map(r -> ((ResourceInstance) r.getMetadata().getAny()).getValue()));
          if(rec.getResumptionToken()!=null)
          {
             total = rec.getResumptionToken().getCompleteListSize().intValue();

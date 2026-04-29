@@ -139,9 +139,7 @@ public class OaiPMHClient {
          }
          return retval;
       }).exceptionally(throwable -> {
-         // Handle errors
-         System.err.println("Error: " + throwable.getMessage());
-         return null; // Or throw a RuntimeException if you prefer
+         throw new RuntimeException("OAI-PMH request to " + url + " failed: " + throwable.getMessage(), throwable);
       });
    }
 
