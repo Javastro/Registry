@@ -109,6 +109,11 @@ public class HarvestClient {
       return hh;
    }
 
+   /** Returns true for OAI-PMH records that contain a parseable VOResource metadata element. */
+   private static boolean isHarvestableRecord(RecordType r) {
+      return r.getMetadata() != null && r.getMetadata().getAny() instanceof ResourceInstance;
+   }
+
    public List<Resource> getRecords(Instant from, Instant until){
       Stream<Resource> sr = Stream.<Resource>empty();
       String resumptionToken = null;
@@ -122,7 +127,7 @@ public class HarvestClient {
             break;
          }
          sr = Stream.concat(sr, rec.getRecords().stream()
-               .filter(r -> r.getMetadata() != null && r.getMetadata().getAny() instanceof ResourceInstance)
+               .filter(HarvestClient::isHarvestableRecord)
                .map(r -> ((ResourceInstance) r.getMetadata().getAny()).getValue()));
          if(rec.getResumptionToken()!=null)
          {
