@@ -9,6 +9,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.javastro.ivoa.entities.resource.AccessURL;
 import org.javastro.ivoa.entities.resource.Capability;
 import org.javastro.ivoa.entities.resource.Resource;
+import org.javastro.ivoa.entities.resource.Service;
 import org.javastro.ivoa.entities.resource.registry.Harvest;
 import org.javastro.ivoa.entities.resource.registry.OAIHTTP;
 import org.jboss.logging.Logger;
@@ -170,10 +171,10 @@ public class RegistryDiscoveryService {
      * {@link Optional#empty()} otherwise.
      */
     Optional<String> findOaiUrl(Resource resource) {
-        if (!(resource instanceof org.javastro.ivoa.entities.resource.registry.Registry)) {
+        if (!(resource instanceof org.javastro.ivoa.entities.resource.registry.Registry reg)) {
             return Optional.empty();
         }
-        for (Capability cap : resource.getCapabilities()) {
+        for (Capability cap : reg.getCapabilities()) {
             if (!(cap instanceof Harvest harvest)) {
                 continue;
             }

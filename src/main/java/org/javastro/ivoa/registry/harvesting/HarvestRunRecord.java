@@ -4,15 +4,26 @@ package org.javastro.ivoa.registry.harvesting;
  * Created on 28/04/2026 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+
 import java.time.Instant;
 
 /**
  * A single bounded run record stored inside a {@link HarvestSource}.
  * At most {@link HarvestSource#MAX_RECENT_RUNS} of these are retained per source.
  */
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlType(propOrder = {
+        "startTime", "endTime", "recordsStored", "newSourcesDiscovered", "outcome", "details"
+})
 public class HarvestRunRecord {
 
+    @XmlJavaTypeAdapter(InstantXmlAdapter.class)
     private Instant startTime;
+    @XmlJavaTypeAdapter(InstantXmlAdapter.class)
     private Instant endTime;
     private int recordsStored;
     private int newSourcesDiscovered;
@@ -54,3 +65,4 @@ public class HarvestRunRecord {
     public String getDetails() { return details; }
     public void setDetails(String details) { this.details = details; }
 }
+

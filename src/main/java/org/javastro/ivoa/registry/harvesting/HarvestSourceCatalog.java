@@ -5,26 +5,22 @@ package org.javastro.ivoa.registry.harvesting;
  */
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.Unmarshaller;
 import org.basex.core.BaseXException;
 import org.basex.core.cmd.XQuery;
 import org.basex.query.QueryException;
 import org.basex.query.QueryProcessor;
-import org.basex.query.value.Value;
 import org.javastro.ivoa.registry.internal.BaseXStoreBase;
 import org.jboss.logging.Logger;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.IOException;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -34,7 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * <p>An in-memory {@link ConcurrentHashMap} is kept in sync with BaseX so that
  * hot-path reads never need a database round-trip.  All mutating operations
- * persist the full catalog document back to BaseX immediately.</p>
+ * persist the full catalog document back to BaseX immediately.  Serialization
+ * and deserialization are handled by JAXB.</p>
  */
 @ApplicationScoped
 public class HarvestSourceCatalog extends BaseXStoreBase {
@@ -46,18 +43,25 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
     final ConcurrentHashMap<String, HarvestSource> cache = new ConcurrentHashMap<>();
     final AtomicBoolean initialized = new AtomicBoolean(false);
 
-    private DocumentBuilder docBuilder;
+    private final JAXBContext jaxbContext;
 
     public HarvestSourceCatalog() {
         super();
         try {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(false);
-            dbf.setValidating(false);
-            docBuilder = dbf.newDocumentBuilder();
-        } catch (ParserConfigurationException e) {
-            throw new RuntimeException("Cannot create DOM builder", e);
+            jaxbContext = JAXBContext.newInstance(HarvestSourceList.class);
+        } catch (JAXBException e) {
+            throw new RuntimeException("Cannot create JAXB context for harvest catalog", e);
         }
+    }
+
+    @Override
+    public void open() {
+        // BaseX context is shared and opened by BasexStore; no separate open required here.
+    }
+
+    @Override
+    public void close() {
+        // BaseX context is shared; HarvestSourceCatalog does not own it.
     }
 
     // -------------------------------------------------------------------------
@@ -216,7 +220,7 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
     // Persistence helpers
     // -------------------------------------------------------------------------
 
-    private void persist() {
+    void persist() {
         String xml = serializeToXml();
         String putQ = "declare variable $xml as xs:string external; "
                 + "db:put(\"Registry\", parse-xml($xml), \"" + CATALOG_PATH + "\")";
@@ -229,146 +233,36 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
     }
 
     // -------------------------------------------------------------------------
-    // XML serialization / deserialization
+    // JAXB serialization / deserialization
     // -------------------------------------------------------------------------
 
     private String serializeToXml() {
-        StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        sb.append("<harvestSources>\n");
-        for (HarvestSource s : cache.values()) {
-            appendSourceXml(sb, s);
+        HarvestSourceList list = new HarvestSourceList();
+        list.setSources(List.copyOf(cache.values()));
+        try {
+            Marshaller m = jaxbContext.createMarshaller();
+            m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+            m.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
+            StringWriter sw = new StringWriter();
+            m.marshal(list, sw);
+            return sw.toString();
+        } catch (JAXBException e) {
+            throw new RuntimeException("Failed to marshal harvest source catalog", e);
         }
-        sb.append("</harvestSources>\n");
-        return sb.toString();
-    }
-
-    private void appendSourceXml(StringBuilder sb, HarvestSource s) {
-        sb.append("  <source>\n");
-        xml(sb, "sourceKey", s.getSourceKey());
-        xml(sb, "identifier", s.getIdentifier());
-        xml(sb, "oaiUrl", s.getOaiUrl());
-        xml(sb, "status", s.getStatus() != null ? s.getStatus().name() : "");
-        xml(sb, "discoveredFromSourceKey", s.getDiscoveredFromSourceKey());
-        xml(sb, "depth", String.valueOf(s.getDepth()));
-        xml(sb, "firstSeen", instant(s.getFirstSeen()));
-        xml(sb, "lastSeen", instant(s.getLastSeen()));
-        xml(sb, "lastAttempted", instant(s.getLastAttempted()));
-        xml(sb, "lastSuccessful", instant(s.getLastSuccessful()));
-        xml(sb, "lastSuccessfulUntil", instant(s.getLastSuccessfulUntil()));
-        xml(sb, "rejectionReason", s.getRejectionReason());
-        sb.append("    <recentRuns>\n");
-        for (HarvestRunRecord r : s.getRecentRuns()) {
-            sb.append("      <run>\n");
-            xml(sb, "startTime", instant(r.getStartTime()), 8);
-            xml(sb, "endTime", instant(r.getEndTime()), 8);
-            xml(sb, "recordsStored", String.valueOf(r.getRecordsStored()), 8);
-            xml(sb, "newSourcesDiscovered", String.valueOf(r.getNewSourcesDiscovered()), 8);
-            xml(sb, "outcome", r.getOutcome(), 8);
-            xml(sb, "details", r.getDetails(), 8);
-            sb.append("      </run>\n");
-        }
-        sb.append("    </recentRuns>\n");
-        sb.append("  </source>\n");
-    }
-
-    private static void xml(StringBuilder sb, String tag, String value) {
-        xml(sb, tag, value, 4);
-    }
-
-    private static void xml(StringBuilder sb, String tag, String value, int indent) {
-        sb.append(" ".repeat(indent))
-          .append("<").append(tag).append(">")
-          .append(escape(value))
-          .append("</").append(tag).append(">\n");
-    }
-
-    private static String escape(String s) {
-        if (s == null) return "";
-        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
-    }
-
-    private static String instant(Instant i) {
-        return i != null ? i.toString() : "";
     }
 
     private void loadFromXml(String xml) {
         try {
-            Document doc = docBuilder.parse(new InputSource(new StringReader(xml)));
-            NodeList sourceNodes = doc.getElementsByTagName("source");
-            for (int i = 0; i < sourceNodes.getLength(); i++) {
-                if (sourceNodes.item(i) instanceof Element el) {
-                    HarvestSource s = parseSource(el);
+            Unmarshaller u = jaxbContext.createUnmarshaller();
+            Object result = u.unmarshal(new StringReader(xml));
+            if (result instanceof HarvestSourceList list) {
+                for (HarvestSource s : list.getSources()) {
                     cache.put(s.getSourceKey(), s);
                 }
             }
-        } catch (SAXException | IOException e) {
+        } catch (JAXBException e) {
             LOG.warnv("Could not parse source catalog XML: {0}", e.getMessage());
         }
     }
-
-    private HarvestSource parseSource(Element el) {
-        HarvestSource s = new HarvestSource();
-        s.setSourceKey(child(el, "sourceKey"));
-        s.setIdentifier(child(el, "identifier"));
-        s.setOaiUrl(child(el, "oaiUrl"));
-        s.setStatus(parseStatus(child(el, "status")));
-        s.setDiscoveredFromSourceKey(child(el, "discoveredFromSourceKey"));
-        s.setDepth(parseInt(child(el, "depth"), 0));
-        s.setFirstSeen(parseInstant(child(el, "firstSeen")));
-        s.setLastSeen(parseInstant(child(el, "lastSeen")));
-        s.setLastAttempted(parseInstant(child(el, "lastAttempted")));
-        s.setLastSuccessful(parseInstant(child(el, "lastSuccessful")));
-        s.setLastSuccessfulUntil(parseInstant(child(el, "lastSuccessfulUntil")));
-        s.setRejectionReason(child(el, "rejectionReason"));
-
-        NodeList runNodes = el.getElementsByTagName("run");
-        List<HarvestRunRecord> runs = new ArrayList<>();
-        for (int i = 0; i < runNodes.getLength(); i++) {
-            if (runNodes.item(i) instanceof Element re) {
-                HarvestRunRecord r = new HarvestRunRecord();
-                r.setStartTime(parseInstant(child(re, "startTime")));
-                r.setEndTime(parseInstant(child(re, "endTime")));
-                r.setRecordsStored(parseInt(child(re, "recordsStored"), 0));
-                r.setNewSourcesDiscovered(parseInt(child(re, "newSourcesDiscovered"), 0));
-                r.setOutcome(child(re, "outcome"));
-                r.setDetails(child(re, "details"));
-                runs.add(r);
-            }
-        }
-        s.setRecentRuns(runs);
-        return s;
-    }
-
-    private static String child(Element el, String tag) {
-        NodeList nl = el.getElementsByTagName(tag);
-        if (nl.getLength() > 0 && nl.item(0).getFirstChild() != null) {
-            return nl.item(0).getFirstChild().getNodeValue();
-        }
-        return "";
-    }
-
-    private static SourceStatus parseStatus(String s) {
-        try {
-            return SourceStatus.valueOf(s);
-        } catch (IllegalArgumentException | NullPointerException e) {
-            return SourceStatus.ACTIVE;
-        }
-    }
-
-    private static Instant parseInstant(String s) {
-        if (s == null || s.isEmpty()) return null;
-        try {
-            return Instant.parse(s);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static int parseInt(String s, int def) {
-        try {
-            return Integer.parseInt(s);
-        } catch (NumberFormatException e) {
-            return def;
-        }
-    }
 }
+

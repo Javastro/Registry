@@ -4,6 +4,14 @@ package org.javastro.ivoa.registry.harvesting;
  * Created on 28/04/2026 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlElementWrapper;
+import jakarta.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +23,15 @@ import java.util.List;
  * the normalized OAI URL; for discovered sources it is the IVOA identifier when
  * available, otherwise the normalized OAI URL.</p>
  */
+@XmlRootElement(name = "source")
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlType(propOrder = {
+        "sourceKey", "identifier", "oaiUrl", "status",
+        "discoveredFromSourceKey", "depth",
+        "firstSeen", "lastSeen", "lastAttempted",
+        "lastSuccessful", "lastSuccessfulUntil",
+        "rejectionReason", "recentRuns"
+})
 public class HarvestSource {
 
     /** Maximum number of recent run records retained per source. */
@@ -31,18 +48,26 @@ public class HarvestSource {
     private String discoveredFromSourceKey;
     /** Hop distance from the seed (0 = seed). */
     private int depth;
+
+    @XmlJavaTypeAdapter(InstantXmlAdapter.class)
     private Instant firstSeen;
+    @XmlJavaTypeAdapter(InstantXmlAdapter.class)
     private Instant lastSeen;
+    @XmlJavaTypeAdapter(InstantXmlAdapter.class)
     private Instant lastAttempted;
+    @XmlJavaTypeAdapter(InstantXmlAdapter.class)
     private Instant lastSuccessful;
     /**
      * The upper bound of the time range used in the last successful harvest.
      * Used as the {@code from} parameter on the next incremental harvest.
      */
+    @XmlJavaTypeAdapter(InstantXmlAdapter.class)
     private Instant lastSuccessfulUntil;
     /** Non-null when status is {@link SourceStatus#REJECTED} or {@link SourceStatus#LIMITED}. */
     private String rejectionReason;
     /** Bounded recent run history – at most {@link #MAX_RECENT_RUNS} entries. */
+    @XmlElementWrapper(name = "recentRuns")
+    @XmlElement(name = "run")
     private List<HarvestRunRecord> recentRuns = new ArrayList<>();
 
     public HarvestSource() {
@@ -119,3 +144,4 @@ public class HarvestSource {
     public List<HarvestRunRecord> getRecentRuns() { return recentRuns; }
     public void setRecentRuns(List<HarvestRunRecord> recentRuns) { this.recentRuns = recentRuns; }
 }
+
