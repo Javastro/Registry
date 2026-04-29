@@ -5,8 +5,9 @@ package org.javastro.ivoa.registry.harvesting;
  */
 
 /**
- * Test helper that exposes the package-private {@link HarvestSourceCatalog#initialized}
- * flag so unit tests can bypass the BaseX-backed initialisation.
+ * Test helper providing a factory method for in-memory {@link HarvestSourceCatalog}
+ * instances whose {@link HarvestSourceCatalog#doPersist(String)} is a no-op, so
+ * unit tests never interact with the BaseX database.
  */
 final class HarvestSourceCatalogTest {
 

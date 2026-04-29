@@ -62,7 +62,7 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
 
     @Override
     public void close() {
-        // BaseX lifecycle is managed by Registry.onStart() via BasexStore.open();
+        // BaseX lifecycle is managed by Registry.onStart() via BasexStore.open().
         // HarvestSourceCatalog does not own the shared context and must not close it.
     }
 
