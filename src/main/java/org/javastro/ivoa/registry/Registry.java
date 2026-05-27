@@ -155,13 +155,12 @@ public class Registry {
        } catch (JAXBException | SAXException | IOException | URISyntaxException e) {
           throw new RuntimeException("cannot create registry record",e);
        }
-      registryQueryInterface.open();
+      registryStoreInterface.open();
 
     }
 
     void onStop(@Observes ShutdownEvent ev) {
        log.info("registry stopping");
-       registryQueryInterface.close();
        registryStoreInterface.close();
     }
 

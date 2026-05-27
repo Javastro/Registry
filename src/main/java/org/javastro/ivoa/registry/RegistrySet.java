@@ -35,4 +35,6 @@ public class RegistrySet {
 
     static final RegistrySet IVO_MANAGED = new RegistrySet("ivo_managed","This set returns the records that are solely managed by this\n" +
           "      registry--that is, records that created by this registry.");
+    static final RegistrySet IVO_HARVESTED = new RegistrySet("ivoa_harvested","This set returns the records that are harvested by this registry from other registries.");
+    static final RegistrySet IVO_ALL = new RegistrySet("ivo_all","This set returns all records in the registry.");
 }

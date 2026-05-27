@@ -6,6 +6,7 @@ import org.javastro.ivoa.entities.resource.registry.iface.ResourceInstance;
 import org.javastro.ivoa.entities.resource.registry.oaipmh.*;
 import org.javastro.ivoa.registry.oaipmh.client.OaiPMHClient;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -16,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *  IMPL this is really a sort of integration test using the RofR - really need a mock registry
  */
 @QuarkusTest
+@Tag("integration")
 class OaiPMHClientTest {
 
 
@@ -24,7 +26,7 @@ class OaiPMHClientTest {
    @BeforeEach
    void setUp() {
 
-      client = new OaiPMHClient("https://rofr.ivoa.net/oai",true);
+      client = new OaiPMHClient("http://rofr.ivoa.net/oai",true);
       assertNotNull(client);
    }
    @Test

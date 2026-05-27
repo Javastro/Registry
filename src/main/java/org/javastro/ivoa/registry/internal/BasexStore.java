@@ -5,6 +5,7 @@ package org.javastro.ivoa.registry.internal;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.basex.core.BaseXException;
+import org.basex.core.Context;
 import org.basex.core.MainOptions;
 import org.basex.core.cmd.*;
 import org.basex.core.users.User;
@@ -23,8 +24,11 @@ import java.util.Objects;
  A registry store implemented with <a href="https://basex.org">...</a> .
  */
 @ApplicationScoped
-public class BasexStore extends BaseXStoreBase  implements RegistryStoreInterface {
+public class BasexStore  implements RegistryStoreInterface{
 
+
+   public static final String REGDB_NAME = "Registry";
+   protected static final Context context = new Context();
 
    private static String updateQuery;
 
@@ -97,18 +101,56 @@ public class BasexStore extends BaseXStoreBase  implements RegistryStoreInterfac
    @Override
    public void create(String xml) {
 
-     try( QueryProcessor proc = new QueryProcessor(updateQuery, context))
-     {
-        proc.variable("rin", xml);
-        Value result = proc.value();
-        
-     } catch (QueryException e) {
-        throw new RuntimeException(e);
-     }
+     create(xml, "managed/base.xml");
+   }
+
+   @Override
+   public void create(String xml, String path) {
+      try( QueryProcessor proc = new QueryProcessor(updateQuery, context))
+      {
+         proc.variable("rin", xml);
+         proc.variable("path", path);
+         Value result = proc.value();
+
+      } catch (QueryException e) {
+         throw new RuntimeException(e);
+      }
+   }
+
+   @Override
+   public String read(String path) throws BaseXException {
+      try( QueryProcessor proc = new QueryProcessor("doc('"+REGDB_NAME+"')/"+path, context))
+      {
+         Value result = proc.value();
+         return result.toString();
+
+      } catch (QueryException e) {
+         throw new RuntimeException(e);
+      }
+   }
+
+   @Override
+   public boolean exists(String path) {
+      try( QueryProcessor proc = new QueryProcessor("db:exists('"+REGDB_NAME+"','"+path+"')", context))
+      {
+         Value result = proc.value();
+         return result.toString().equals("true()"); //TODO is this correct?
+
+      } catch (QueryException e) {
+         throw new RuntimeException(e);
+      }
    }
 
    @Override
    public void delete(Ivoid id) {
+     log.warn("delete not implemented yet for id="+id); // FIXME implement properly
+   }
 
+   /**
+    *
+    * @return The Store context
+    */
+   public Context getContext() {
+      return context;
    }
 }

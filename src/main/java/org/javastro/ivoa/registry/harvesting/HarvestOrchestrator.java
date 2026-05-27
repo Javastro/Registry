@@ -8,11 +8,18 @@ import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.javastro.ivoa.entities.resource.AccessURL;
+import org.javastro.ivoa.entities.resource.Capability;
 import org.javastro.ivoa.entities.resource.Resource;
+import org.javastro.ivoa.entities.resource.registry.Harvest;
+import org.javastro.ivoa.entities.resource.registry.OAIHTTP;
 import org.javastro.ivoa.registry.Registry;
 import org.javastro.ivoa.registry.XMLUtils;
+import org.javastro.ivoa.registry.internal.HarvestSourceCatalog;
 import org.jboss.logging.Logger;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -27,8 +34,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *   <li>The RofR seed source is enrolled at first scheduler invocation.</li>
  *   <li>Each scheduler tick dequeues one pending source, harvests it
  *       incrementally (using the per-source {@code lastSuccessfulUntil} cursor),
- *       stores the records, and passes them to
- *       {@link RegistryDiscoveryService} to find new sources.</li>
+ *       stores the records, and parses them to
+ *       find new sources.</li>
  *   <li>Newly discovered sources are enqueued through the same queue.</li>
  *   <li>The queue is deduplicated: a source that is already {@code QUEUED} or
  *       {@code RUNNING} is never enqueued twice.</li>
@@ -52,15 +59,20 @@ public class HarvestOrchestrator {
     @Inject
     HarvestSourceCatalog catalog;
 
-    @Inject
-    RegistryDiscoveryService discoveryService;
-
-    @ConfigProperty(name = "ivoa.harvesting.rofr.url", defaultValue = "https://rofr.ivoa.net/oai")
-    String rofrUrl;
-
     @ConfigProperty(name = "ivoa.harvesting.discovery.enabled", defaultValue = "true")
     boolean discoveryEnabled;
 
+    @ConfigProperty(name = "ivoa.harvesting.discovery.max-sources", defaultValue = "50")
+    int maxSources;
+
+    @ConfigProperty(name = "ivoa.harvesting.discovery.max-depth", defaultValue = "3")
+    int maxDepth;
+
+    @ConfigProperty(name = "ivoa.harvesting.discovery.max-per-run", defaultValue = "5")
+    int maxPerRun;
+
+
+    static final String REGISTRY_STANDARD_ID_PREFIX = "ivo://ivoa.net/std/Registry";
     // -------------------------------------------------------------------------
     // Internal state
     // -------------------------------------------------------------------------
@@ -100,8 +112,8 @@ public class HarvestOrchestrator {
                                 && s.getLastAttempted() == null)
                         .findFirst()
                         .ifPresent(s -> {
-                            queue.offer(s.getSourceKey());
-                            processSourceKey(s.getSourceKey());
+                            queue.offer(s.getIdentifier());
+                            processSourceKey(s.getIdentifier());
                         });
             } else {
                 processSourceKey(sourceKey);
@@ -151,27 +163,13 @@ public class HarvestOrchestrator {
     /**
      * Trigger an immediate, synchronous harvest of the seed (or a specific source).
      *
-     * @param sourceKeyOrNull seed is used when {@code null}
+     * @param sourceKey seed is used when {@code null}
      * @return number of records stored
      */
-    public int triggerHarvest(String sourceKeyOrNull) {
+    public int triggerHarvest(String sourceKey) {
         ensureInitialized();
-        if (sourceKeyOrNull == null) {
-            String seedKey = RegistryDiscoveryService.normalizeUrl(rofrUrl);
-            if (!catalog.contains(seedKey)) {
-                HarvestSource seed = HarvestSource.create(seedKey, "", rofrUrl, null, 0);
-                seed.setStatus(SourceStatus.ACTIVE);
-                catalog.upsert(seed);
-            }
-            catalog.updateStatus(seedKey, SourceStatus.ACTIVE);
-            return processSourceKey(seedKey);
-        }
-        if (!catalog.contains(sourceKeyOrNull)) {
-            log.warnv("triggerHarvest: unknown source {0}", sourceKeyOrNull);
-            return 0;
-        }
-        catalog.updateStatus(sourceKeyOrNull, SourceStatus.ACTIVE);
-        return processSourceKey(sourceKeyOrNull);
+        catalog.updateStatus(sourceKey, SourceStatus.ACTIVE);
+        return processSourceKey(sourceKey);
     }
 
     /**
@@ -230,22 +228,7 @@ public class HarvestOrchestrator {
         return true;
     }
 
-    /**
-     * Enqueue the RofR seed source (idempotent).
-     * If the seed is not yet in the catalog it is registered first.
-     *
-     * @return the seed source key, or {@code null} if enrollment failed.
-     */
-    public String enqueueSeed() {
-        ensureInitialized();
-        String seedKey = RegistryDiscoveryService.normalizeUrl(rofrUrl);
-        if (!catalog.contains(seedKey)) {
-            HarvestSource seed = HarvestSource.create(seedKey, "", rofrUrl, null, 0);
-            seed.setStatus(SourceStatus.ACTIVE);
-            catalog.upsert(seed);
-        }
-        return enqueue(seedKey) ? seedKey : null;
-    }
+
 
     // -------------------------------------------------------------------------
     // Internal processing
@@ -300,7 +283,7 @@ public class HarvestOrchestrator {
 
                 // Run discovery on the harvested records
                 if (discoveryEnabled) {
-                    List<String> newKeys = discoveryService.discoverNewSources(
+                    List<String> newKeys = discoverNewSources(
                             records, sourceKey, source.getDepth(), catalog);
                     newSources = newKeys.size();
                     for (String newKey : newKeys) {
@@ -317,11 +300,11 @@ public class HarvestOrchestrator {
                             HarvestSource updated = catalog.get(sourceKey).orElse(source);
                             updated.setIdentifier(identified.getIdentifier());
                             // Re-key if identifier gives a better key
-                            String betterKey = RegistryDiscoveryService.deriveSourceKey(
+                            String betterKey = deriveSourceKey(
                                     identified.getIdentifier(),
-                                    RegistryDiscoveryService.normalizeUrl(source.getOaiUrl()));
+                                    normalizeUrl(source.getOaiUrl()));
                             if (!betterKey.equals(sourceKey)) {
-                                updated.setSourceKey(betterKey);
+                                updated.setIdentifier(betterKey);
                                 catalog.upsert(updated);
                                 // Note: old key remains in catalog as a duplicate until restart
                             } else {
@@ -362,24 +345,206 @@ public class HarvestOrchestrator {
                         .forEach(s -> {
                             s.setStatus(SourceStatus.ACTIVE);
                             catalog.upsert(s);
-                            queue.offer(s.getSourceKey());
+                            queue.offer(s.getIdentifier());
                         });
-                // Enroll the seed source if this is the first run
-                String seedKey = RegistryDiscoveryService.normalizeUrl(rofrUrl);
-                if (!catalog.contains(seedKey)) {
-                    log.info("Enrolling RofR seed source");
-                    HarvestSource seed = HarvestSource.create(seedKey, "", rofrUrl, null, 0);
-                    seed.setStatus(SourceStatus.ACTIVE);
-                    catalog.upsert(seed);
-                    queue.offer(seedKey);
-                    catalog.updateStatus(seedKey, SourceStatus.QUEUED);
-                }
             } catch (Exception e) {
                 catalogInitialized.set(false); // allow retry
                 log.errorv("Orchestrator initialization failed: {0}", e.getMessage());
             }
         }
     }
+
+    /**
+     * Inspect the list of harvested resources and register any newly discovered
+     * harvestable registries in {@code catalog}.
+     *
+     * @param resources         records returned by a harvest run
+     * @param fromSourceKey     the source key that produced these records (for provenance)
+     * @param parentDepth       discovery depth of the producing source
+     * @param catalog           the catalog to register new sources into
+     * @return keys of sources that were <em>newly</em> accepted
+     */
+    public List<String> discoverNewSources(List<Resource> resources,
+                                           String fromSourceKey,
+                                           int parentDepth,
+                                           HarvestSourceCatalog catalog) {
+        List<String> accepted = new ArrayList<>();
+
+        if (!discoveryEnabled) {
+            log.debug("Discovery is disabled – skipping");
+            return accepted;
+        }
+
+        int childDepth = parentDepth + 1;
+        if (childDepth > maxDepth) {
+            log.debugv("Max discovery depth {0} reached (parent depth {1})", maxDepth, parentDepth);
+            return accepted;
+        }
+
+        for (Resource resource : resources) {
+            if (accepted.size() >= maxPerRun) {
+                log.debugv("Per-run discovery cap {0} reached", maxPerRun);
+                break;
+            }
+            if (catalog.count() >= maxSources) {
+                log.infov("Source catalog cap {0} reached – stopping discovery", maxSources);
+                break;
+            }
+
+            Optional<String> oaiUrl = findOaiUrl(resource);
+            if (oaiUrl.isEmpty()) {
+                continue; // not a harvestable registry
+            }
+
+            String candidateUrl = normalizeUrl(oaiUrl.get());
+            String candidateId = resource.getIdentifier() != null ? resource.getIdentifier() : "";
+
+            // Cycle / duplicate detection
+            if (isSelf(fromSourceKey, candidateUrl, candidateId)) {
+                log.debugv("Skipping self-reference: {0}", candidateUrl);
+                recordRejection(catalog, candidateUrl, candidateId, fromSourceKey, childDepth,
+                      "self-reference");
+                continue;
+            }
+
+            String sourceKey = deriveSourceKey(candidateId, candidateUrl);
+
+            if (catalog.contains(sourceKey)) {
+                // Already known – update lastSeen but do not re-enqueue here
+                HarvestSource existing = catalog.get(sourceKey).orElseThrow();
+                existing.setLastSeen(java.time.Instant.now());
+                catalog.upsert(existing);
+                log.debugv("Duplicate source – already known: {0}", sourceKey);
+                continue;
+            }
+
+            // Validate: connect to the endpoint before accepting
+            log.infov("Validating candidate registry at {0}", candidateUrl);
+            boolean valid;
+            try {
+                HarvestClient client = new HarvestClient(candidateUrl);
+                valid = client.validate();
+            } catch (Exception e) {
+                valid = false;
+                log.debugv("Validation of {0} threw: {1}", candidateUrl, e.getMessage());
+            }
+
+            if (!valid) {
+                log.infov("Candidate {0} failed validation – rejected", candidateUrl);
+                recordRejection(catalog, candidateUrl, candidateId, fromSourceKey, childDepth,
+                      "validation failed");
+                continue;
+            }
+
+            // Accept
+            HarvestSource newSource = HarvestSource.create(candidateId, candidateUrl,
+                  fromSourceKey, childDepth);
+            catalog.upsert(newSource);
+            accepted.add(sourceKey);
+            log.infov("Discovered new harvest source: {0} (from {1}, depth {2})",
+                  sourceKey, fromSourceKey, childDepth);
+        }
+
+        return accepted;
+    }
+
+    // -------------------------------------------------------------------------
+    // Package-private helpers (tested directly)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the OAI-PMH base URL if the resource is a harvestable registry
+     * (has a {@link Harvest} capability with a {@link OAIHTTP} interface), or
+     * {@link Optional#empty()} otherwise.
+     */
+    Optional<String> findOaiUrl(Resource resource) {
+        if (!(resource instanceof org.javastro.ivoa.entities.resource.registry.Registry reg)) {
+            return Optional.empty();
+        }
+        for (Capability cap : reg.getCapabilities()) {
+            if (!(cap instanceof Harvest harvest)) {
+                continue;
+            }
+            String stdId = harvest.getStandardID();
+            if (stdId == null || !stdId.startsWith(REGISTRY_STANDARD_ID_PREFIX)) {
+                continue;
+            }
+            for (Object iface : harvest.getInterfaces()) {
+                if (iface instanceof OAIHTTP oaiHttp) {
+                    for (AccessURL url : oaiHttp.getAccessURLs()) {
+                        String val = url.getValue();
+                        if (val != null && !val.isBlank()) {
+                            return Optional.of(val.trim());
+                        }
+                    }
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Derive a stable source key: prefer the IVOA identifier, fall back to the
+     * normalized OAI URL.
+     */
+    static String deriveSourceKey(String identifier, String normalizedOaiUrl) {
+        if (identifier != null && !identifier.isBlank()
+              && identifier.toLowerCase(Locale.ROOT).startsWith("ivo://")) {
+            return identifier.toLowerCase(Locale.ROOT);
+        }
+        return normalizedOaiUrl;
+    }
+
+    /**
+     * Normalize an OAI-PMH URL to a canonical form used for deduplication:
+     * lower-case scheme+host+path, no trailing slash.
+     */
+    static String normalizeUrl(String url) {
+        if (url == null) return "";
+        try {
+            URI uri = new URI(url.trim());
+            String normalized = uri.getScheme().toLowerCase(Locale.ROOT)
+                  + "://"
+                  + uri.getHost().toLowerCase(Locale.ROOT)
+                  + (uri.getPort() > 0 && uri.getPort() != 80 && uri.getPort() != 443
+                  ? ":" + uri.getPort() : "")
+                  + (uri.getPath() != null ? uri.getPath() : "");
+            if (normalized.endsWith("/")) {
+                normalized = normalized.substring(0, normalized.length() - 1);
+            }
+            return normalized;
+        } catch (URISyntaxException | NullPointerException e) {
+            return url.trim().toLowerCase(Locale.ROOT);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    private boolean isSelf(String fromSourceKey, String candidateUrl, String candidateId) {
+        if (fromSourceKey == null) return false;
+        String fromLower = fromSourceKey.toLowerCase(Locale.ROOT);
+        return fromLower.equals(normalizeUrl(candidateUrl))
+              || (!candidateId.isEmpty() && fromLower.equals(
+              candidateId.toLowerCase(Locale.ROOT)));
+    }
+
+    private void recordRejection(HarvestSourceCatalog catalog,
+                                 String candidateUrl, String candidateId,
+                                 String fromSourceKey, int depth,
+                                 String reason) {
+        String key = deriveSourceKey(candidateId, candidateUrl);
+        if (!catalog.contains(key)) {
+            HarvestSource s = HarvestSource.create(key, candidateUrl,
+                  fromSourceKey, depth);
+            s.setStatus(SourceStatus.REJECTED);
+            s.setRejectionReason(reason);
+            catalog.upsert(s);
+        }
+    }
+
+
 
     // -------------------------------------------------------------------------
     // Status record

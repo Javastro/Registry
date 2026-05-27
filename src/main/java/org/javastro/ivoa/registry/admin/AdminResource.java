@@ -5,18 +5,19 @@ package org.javastro.ivoa.registry.admin;
  * Created on 07/08/2025 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
+import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.javastro.ivoa.registry.Registry;
 import org.javastro.ivoa.registry.harvesting.HarvestOrchestrator;
 import org.javastro.ivoa.registry.harvesting.HarvestSource;
-import org.javastro.ivoa.registry.harvesting.RofrHarvestService;
 import org.javastro.ivoa.registry.harvesting.SourceStatus;
 import org.javastro.ivoa.schema.XMLValidator;
 import org.jboss.resteasy.reactive.RestQuery;
@@ -38,12 +39,15 @@ public class AdminResource {
     Registry registry;
 
     @Inject
-    RofrHarvestService rofrHarvestService;
-
-    @Inject
     HarvestOrchestrator harvestOrchestrator;
 
-    @Operation(summary = "adds resources to the registry",
+    //IMPL would like to to have this duplication with HarvestSourceCatalog but it is not straightforward to inject the catalog into the service and then the service into the resource
+    @ConfigProperty(name = "ivoa.harvesting.rofr.ivoid", defaultValue = "ivo://ivoa.net/rofr")
+    String rofrIvoid;
+
+
+
+   @Operation(summary = "adds resources to the registry",
             description = """
                     Add a resource to the database in strict mode - strict means
                        * validated against the VOResource schema
@@ -77,23 +81,7 @@ public class AdminResource {
         return Response.accepted().build();
     }
 
-    @Operation(summary = "Trigger an incremental harvest from RofR",
-            description = """
-                    Immediately runs an incremental harvest from the IVOA Registry of Registries (RofR).
-                    Only records that have changed since the last successful harvest are retrieved.
-                    The first call always performs a full harvest.
-                    """)
-    @POST
-    @Path("harvestRofr")
-    @RolesAllowed("update")
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response harvestRofr() {
-        int count = rofrHarvestService.harvest();
-        return Response.accepted()
-                .entity("Harvested " + count + " records from RofR")
-                .build();
-    }
-
+  //harvesting below
     @Operation(summary = "Enqueue or immediately trigger a harvest",
             description = """
                     Enqueues the seed RofR source (default) or a specific source for harvesting.
@@ -106,18 +94,19 @@ public class AdminResource {
     public Response harvest(
             @RestQuery String sourceKey,
             @RestQuery boolean immediate) {
+
+       String theKey = sourceKey != null ? sourceKey : rofrIvoid;
+
         if (immediate) {
-            int count = harvestOrchestrator.triggerHarvest(sourceKey);
+            int count = harvestOrchestrator.triggerHarvest(theKey);
             return Response.accepted()
                     .entity(new HarvestTriggerResult("triggered", count))
                     .build();
         }
         boolean enqueued;
-        if (sourceKey != null) {
-            enqueued = harvestOrchestrator.enqueue(sourceKey);
-        } else {
-            enqueued = harvestOrchestrator.enqueueSeed() != null;
-        }
+
+        enqueued = harvestOrchestrator.enqueue(theKey);
+
         return Response.accepted()
                 .entity(new HarvestTriggerResult(enqueued ? "enqueued" : "skipped", 0))
                 .build();

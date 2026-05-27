@@ -6,6 +6,7 @@ package org.javastro.ivoa.registry.harvesting;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import org.javastro.ivoa.registry.internal.HarvestSourceCatalog;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -150,8 +151,8 @@ class HarvestOrchestratorTest {
 
     @Test
     void catalogUpsert_idempotentForSameKey() {
-        HarvestSourceCatalog inMem = HarvestSourceCatalogTest.inMemoryCatalog();
-        HarvestSource s1 = HarvestSource.create("ivo://example.org/r1", "ivo://example.org/r1",
+        HarvestSourceCatalog inMem = new HarvestSourceCatalog(new MockRegistryStore());
+        HarvestSource s1 = HarvestSource.create( "ivo://example.org/r1",
                 "https://example.org/oai", null, 0);
         inMem.upsert(s1);
         inMem.upsert(s1); // second upsert with same key
@@ -161,13 +162,13 @@ class HarvestOrchestratorTest {
 
     @Test
     void catalogUpsert_preservesProvenance() {
-        HarvestSourceCatalog inMem = HarvestSourceCatalogTest.inMemoryCatalog();
-        HarvestSource original = HarvestSource.create("ivo://example.org/r2",
+        HarvestSourceCatalog inMem = new HarvestSourceCatalog(new MockRegistryStore());
+        HarvestSource original = HarvestSource.create(
                 "ivo://example.org/r2", "https://example.org/oai", "seedKey", 1);
         inMem.upsert(original);
 
         // Re-upsert with different discoveredFromSourceKey
-        HarvestSource updated = HarvestSource.create("ivo://example.org/r2",
+        HarvestSource updated = HarvestSource.create(
                 "ivo://example.org/r2", "https://example.org/oai", "otherParent", 99);
         inMem.upsert(updated);
 
@@ -179,8 +180,8 @@ class HarvestOrchestratorTest {
 
     @Test
     void catalogUpdateStatus_persistsChange() {
-        HarvestSourceCatalog inMem = HarvestSourceCatalogTest.inMemoryCatalog();
-        inMem.upsert(HarvestSource.create("k-status", "", "https://s.example.org/oai", null, 0));
+        HarvestSourceCatalog inMem = new HarvestSourceCatalog(new MockRegistryStore());
+        inMem.upsert(HarvestSource.create("k-status", "", "https://s.example.org/oai", 0));
         inMem.updateStatus("k-status", SourceStatus.FAILED);
 
         assertEquals(SourceStatus.FAILED, inMem.get("k-status").orElseThrow().getStatus());
@@ -189,7 +190,7 @@ class HarvestOrchestratorTest {
     @Test
     void harvestSourceRunHistory_boundedToMax() {
         HarvestSource s = HarvestSource.create("k-history", "", "https://h.example.org/oai",
-                null, 0);
+                 0);
         for (int i = 0; i < HarvestSource.MAX_RECENT_RUNS + 3; i++) {
             s.addRunRecord(new HarvestRunRecord(
                     java.time.Instant.now(), java.time.Instant.now(), i, 0, "SUCCESS", ""));

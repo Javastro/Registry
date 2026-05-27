@@ -1,19 +1,21 @@
-package org.javastro.ivoa.registry.harvesting;
+package org.javastro.ivoa.registry.internal;
 
 /*
  * Created on 28/04/2026 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import org.basex.core.BaseXException;
-import org.basex.core.cmd.XQuery;
-import org.basex.query.QueryException;
-import org.basex.query.QueryProcessor;
-import org.javastro.ivoa.registry.internal.BaseXStoreBase;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.javastro.ivoa.registry.harvesting.HarvestRunRecord;
+import org.javastro.ivoa.registry.harvesting.HarvestSource;
+import org.javastro.ivoa.registry.harvesting.HarvestSourceList;
+import org.javastro.ivoa.registry.harvesting.SourceStatus;
 import org.jboss.logging.Logger;
 
 import java.io.StringReader;
@@ -34,7 +36,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * and deserialization are handled by JAXB.</p>
  */
 @ApplicationScoped
-public class HarvestSourceCatalog extends BaseXStoreBase {
+public class HarvestSourceCatalog  {
+
+    @ConfigProperty(name = "ivoa.harvesting.rofr.url", defaultValue = "http://rofr.ivoa.net/oai")
+    String rofrUrl;
+
+    @ConfigProperty(name = "ivoa.harvesting.rofr.ivoid", defaultValue = "ivo://ivoa.net/rofr")
+    String rofrIvoid;
 
     private static final Logger LOG = Logger.getLogger(HarvestSourceCatalog.class);
 
@@ -45,8 +53,9 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
 
     private final JAXBContext jaxbContext;
 
-    public HarvestSourceCatalog() {
-        super();
+    @Inject //IMPL perhaps shoul use initializer method
+    public HarvestSourceCatalog( RegistryStoreInterface store) {
+        this.store = store;
         try {
             jaxbContext = JAXBContext.newInstance(HarvestSourceList.class);
         } catch (JAXBException e) {
@@ -54,17 +63,7 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
         }
     }
 
-    @Override
-    public void open() {
-        // BaseX lifecycle is managed by Registry.onStart() via BasexStore.open().
-        // HarvestSourceCatalog does not independently manage the BaseX database.
-    }
-
-    @Override
-    public void close() {
-        // BaseX lifecycle is managed by Registry.onStart() via BasexStore.open().
-        // HarvestSourceCatalog does not own the shared context and must not close it.
-    }
+       private final RegistryStoreInterface store;
 
     // -------------------------------------------------------------------------
     // Initialisation
@@ -80,20 +79,19 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
             return;
         }
         try {
-            String initQ = "if (not(db:exists(\"Registry\",\"" + CATALOG_PATH + "\"))) "
-                    + "then db:put(\"Registry\", <harvestSources/>, \"" + CATALOG_PATH + "\") "
-                    + "else ()";
-            try (QueryProcessor p = new QueryProcessor(initQ, context)) {
-                p.value();
-            }
+            if (!store.exists(CATALOG_PATH)) {
+                LOG.infov("No existing source catalog found at {0}, creating new RofR", CATALOG_PATH);
 
-            String xml = new XQuery(
-                    "serialize(db:get(\"Registry\",\"" + CATALOG_PATH + "\"))").execute(context);
+
+                final HarvestSource e1 = HarvestSource.create(rofrIvoid,rofrUrl,null,0);
+                store.create(serializeToXml(List.of(e1)),CATALOG_PATH);
+            }
+            String xml = store.read(CATALOG_PATH);
             if (xml != null && !xml.isBlank()) {
                 loadFromXml(xml);
             }
             LOG.infov("Source catalog initialized – {0} source(s) loaded", cache.size());
-        } catch (QueryException | BaseXException e) {
+        } catch (BaseXException e) {
             LOG.warnv("Could not initialize source catalog: {0}", e.getMessage());
             initialized.set(false); // allow retry
         }
@@ -120,7 +118,7 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
      */
     public synchronized HarvestSource upsert(HarvestSource source) {
         ensureInit();
-        HarvestSource existing = cache.get(source.getSourceKey());
+        HarvestSource existing = cache.get(source.getIdentifier());
         if (existing != null) {
             // idempotent refresh – preserve provenance
             existing.setLastSeen(Instant.now());
@@ -130,13 +128,13 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
             if (source.getOaiUrl() != null) {
                 existing.setOaiUrl(source.getOaiUrl());
             }
-            cache.put(existing.getSourceKey(), existing);
+            cache.put(existing.getIdentifier(), existing);
             persist();
             return existing;
         }
         source.setFirstSeen(Instant.now());
         source.setLastSeen(Instant.now());
-        cache.put(source.getSourceKey(), source);
+        cache.put(source.getIdentifier(), source);
         persist();
         return source;
     }
@@ -223,32 +221,23 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
     // -------------------------------------------------------------------------
 
     private void persist() {
-        doPersist(serializeToXml());
+        store.create(serializeToXml(), CATALOG_PATH);
     }
 
-    /**
-     * Writes the serialized catalog XML to BaseX.
-     * Subclasses (or anonymous subclasses in tests) may override this to suppress
-     * the database write, following the Template Method pattern.
-     */
-    protected void doPersist(String xml) {
-        String putQ = "declare variable $xml as xs:string external; "
-                + "db:put(\"Registry\", parse-xml($xml), \"" + CATALOG_PATH + "\")";
-        try (QueryProcessor p = new QueryProcessor(putQ, context)) {
-            p.variable("xml", xml);
-            p.value();
-        } catch (QueryException e) {
-            LOG.errorv("Failed to persist source catalog: {0}", e.getMessage());
-        }
-    }
+
 
     // -------------------------------------------------------------------------
     // JAXB serialization / deserialization
     // -------------------------------------------------------------------------
 
-    private String serializeToXml() {
+    private String serializeToXml()
+    {
+        return serializeToXml(List.copyOf(cache.values()));
+    }
+
+    private String serializeToXml(List<HarvestSource> sources) {
         HarvestSourceList list = new HarvestSourceList();
-        list.setSources(List.copyOf(cache.values()));
+        list.setSources(sources);
         try {
             Marshaller m = jaxbContext.createMarshaller();
             m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
@@ -267,7 +256,7 @@ public class HarvestSourceCatalog extends BaseXStoreBase {
             Object result = u.unmarshal(new StringReader(xml));
             if (result instanceof HarvestSourceList list) {
                 for (HarvestSource s : list.getSources()) {
-                    cache.put(s.getSourceKey(), s);
+                    cache.put(s.getIdentifier(), s);
                 }
             }
         } catch (JAXBException e) {

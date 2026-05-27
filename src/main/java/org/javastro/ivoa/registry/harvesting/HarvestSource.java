@@ -26,7 +26,7 @@ import java.util.List;
 @XmlRootElement(name = "source")
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(propOrder = {
-        "sourceKey", "identifier", "oaiUrl", "status",
+        "identifier", "oaiUrl", "status",
         "discoveredFromSourceKey", "depth",
         "firstSeen", "lastSeen", "lastAttempted",
         "lastSuccessful", "lastSuccessfulUntil",
@@ -37,8 +37,7 @@ public class HarvestSource {
     /** Maximum number of recent run records retained per source. */
     public static final int MAX_RECENT_RUNS = 5;
 
-    /** Stable unique key for this source (IVOA identifier or normalized OAI URL). */
-    private String sourceKey;
+
     /** IVOA identifier from Identify response, may be empty until first successful identify. */
     private String identifier;
     /** Bare OAI-PMH endpoint URL. */
@@ -76,10 +75,9 @@ public class HarvestSource {
     /**
      * Factory for creating a new source entry.
      */
-    public static HarvestSource create(String sourceKey, String identifier, String oaiUrl,
+    public static HarvestSource create(String identifier, String oaiUrl,
                                         String discoveredFromSourceKey, int depth) {
         HarvestSource s = new HarvestSource();
-        s.sourceKey = sourceKey;
         s.identifier = identifier != null ? identifier : "";
         s.oaiUrl = oaiUrl;
         s.status = SourceStatus.QUEUED;
@@ -101,8 +99,6 @@ public class HarvestSource {
 
     // --- getters / setters ---------------------------------------------------
 
-    public String getSourceKey() { return sourceKey; }
-    public void setSourceKey(String sourceKey) { this.sourceKey = sourceKey; }
 
     public String getIdentifier() { return identifier; }
     public void setIdentifier(String identifier) { this.identifier = identifier; }
