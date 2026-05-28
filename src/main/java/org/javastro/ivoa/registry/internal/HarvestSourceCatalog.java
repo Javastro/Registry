@@ -18,8 +18,10 @@ import org.javastro.ivoa.registry.harvesting.HarvestSourceList;
 import org.javastro.ivoa.registry.harvesting.SourceStatus;
 import org.jboss.logging.Logger;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +45,9 @@ public class HarvestSourceCatalog  {
 
     @ConfigProperty(name = "ivoa.harvesting.rofr.ivoid", defaultValue = "ivo://ivoa.net/rofr")
     String rofrIvoid;
+
+    @ConfigProperty(name = "ivoa.harvesting.rofr.uselocal", defaultValue = "false")
+    boolean rofrLocal;
 
     private static final Logger LOG = Logger.getLogger(HarvestSourceCatalog.class);
 
@@ -80,12 +85,25 @@ public class HarvestSourceCatalog  {
         }
         try {
             if (!store.exists(CATALOG_PATH)) {
-                LOG.infov("No existing source catalog found at {0}, creating new RofR", CATALOG_PATH);
+                LOG.infov("No existing source catalog found at {0}", CATALOG_PATH);
 
+                if (rofrLocal) {
+                    LOG.infov("creating initial sources from local catalog");
+                    String content = new String(
+                          getClass().getClassLoader()
+                                .getResourceAsStream("/initialCatalog.xml")
+                                .readAllBytes(),
+                          StandardCharsets.UTF_8
+                    );
+                    store.create(content, CATALOG_PATH);
 
-                final HarvestSource e1 = HarvestSource.create(rofrIvoid,rofrUrl,null,0);
-                //e1.setDiscoverySet("ivo_publishers");//TODO restore when https://github.com/ivoa/registry-housekeeping/issues/10 fixed
-                store.create(serializeToXml(List.of(e1)),CATALOG_PATH);
+                }
+                else {
+                    LOG.infov("Creating initial source catalog with RofR entry {0} ({1})", rofrIvoid, rofrUrl);
+                    final HarvestSource e1 = HarvestSource.create(rofrIvoid, rofrUrl, null, 0);
+                    //e1.setDiscoverySet("ivo_publishers");//TODO restore when https://github.com/ivoa/registry-housekeeping/issues/10 fixed
+                    store.create(serializeToXml(List.of(e1)), CATALOG_PATH);
+                }
             }
             String xml = store.read(CATALOG_PATH);
             if (xml != null && !xml.isBlank()) {
@@ -95,6 +113,8 @@ public class HarvestSourceCatalog  {
         } catch (BaseXException e) {
             LOG.warnv("Could not initialize source catalog: {0}", e.getMessage());
             initialized.set(false); // allow retry
+        } catch (IOException e) {
+           throw new RuntimeException(e);
         }
     }
 

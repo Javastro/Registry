@@ -99,7 +99,7 @@ public class HarvestOrchestrator {
      * Cron-driven queue processor.  Skips if a harvest is already running.
      * Initialises the catalog and enrolls the seed source on first invocation.
      */
-    @Scheduled(cron = "{ivoa.harvesting.rofr.cron}")
+    @Scheduled(cron = "{ivoa.harvesting.cron}")
     void processQueue() {
         ensureInitialized();
         if (!running.compareAndSet(false, true)) {
