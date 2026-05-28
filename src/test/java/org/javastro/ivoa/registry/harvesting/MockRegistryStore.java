@@ -32,6 +32,11 @@ public class MockRegistryStore implements RegistryStoreInterface {
     }
 
     @Override
+    public void deleteEntry(Ivoid id) {
+         log.info("MockRegistryStore delete entry with id: {}", id);
+    }
+
+    @Override
     public String read(String path) {
         log.info("MockRegistryStore read xml: {}", path);
         return null;
@@ -43,8 +48,9 @@ public class MockRegistryStore implements RegistryStoreInterface {
         return false;
     }
 
+
     @Override
-    public void delete(Ivoid id) {
+    public void delete(String id) {
         log.info("MockRegistryStore delete id: {}", id);
 
     }

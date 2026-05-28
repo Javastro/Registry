@@ -122,7 +122,6 @@ public class HarvestSourceCatalog  {
         HarvestSource existing = cache.get(source.getIdentifier());
         if (existing != null) {
             // idempotent refresh – preserve provenance
-            existing.setLastSeen(Instant.now());
             if (source.getIdentifier() != null && !source.getIdentifier().isEmpty()) {
                 existing.setIdentifier(source.getIdentifier());
             }
@@ -134,7 +133,6 @@ public class HarvestSourceCatalog  {
             return existing;
         }
         source.setFirstSeen(Instant.now());
-        source.setLastSeen(Instant.now());
         cache.put(source.getIdentifier(), source);
         persist();
         return source;
@@ -180,15 +178,7 @@ public class HarvestSourceCatalog  {
         }
     }
 
-    /** Update the incremental cursor used as {@code from} on the next harvest. */
-    public synchronized void updateCursor(String sourceKey, Instant cursor) {
-        ensureInit();
-        HarvestSource s = cache.get(sourceKey);
-        if (s != null) {
-            s.setLastSuccessfulUntil(cursor);
-            persist();
-        }
-    }
+
 
     public synchronized void updateLastAttempted(String sourceKey, Instant ts) {
         ensureInit();

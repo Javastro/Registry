@@ -46,6 +46,7 @@ public interface RegistryStoreInterface  {
      */
     void createEntry(String xml, String path); // TODO - add exception - there is no signal if this fails...
 
+     void deleteEntry(Ivoid id);
     /**
      * read the content of the given path from the store.
      * @param path the path to read from the store. The path should be a valid path within the store, and should include the filename (e.g. "managed/base.xml").
@@ -61,6 +62,10 @@ public interface RegistryStoreInterface  {
      */
     boolean exists(String path);
 
-    void delete(Ivoid id);
+   /**
+    * Delete a whole path from the database.
+    * @param path
+    */
+    void delete(String path);
 }
 

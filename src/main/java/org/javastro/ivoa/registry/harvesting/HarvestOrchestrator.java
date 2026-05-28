@@ -7,7 +7,6 @@ package org.javastro.ivoa.registry.harvesting;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.xml.bind.JAXBElement;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.javastro.ivoa.entities.resource.AccessURL;
 import org.javastro.ivoa.entities.resource.Capability;
@@ -47,7 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * <p>Scheduling is controlled by the {@code ivoa.harvesting.rofr.cron} property
  * (default {@code "off"} = disabled).  Set it to a cron expression such as
- * {@code "0 0 * * * ?"} to enable periodic harvesting.</p>
+ * {@code "0 0/10 * * * ?"} to enable periodic harvesting.</p>
  */
 @ApplicationScoped
 public class HarvestOrchestrator {
@@ -104,24 +103,27 @@ public class HarvestOrchestrator {
     void processQueue() {
         ensureInitialized();
         if (!running.compareAndSet(false, true)) {
-            log.debug("Harvest already running – skipping this tick");
+            log.warn("Harvest already running – skipping this tick");
             return;
         }
+        log.info("Harvesting started");
         try {
             String sourceKey = queue.poll();
             if (sourceKey == null) {
-                // Nothing queued; check for ACTIVE sources that have never been run
+                // Nothing queued; check for ACTIVE sources or any FAILED ones that have had a recent success
                 catalog.getAll().stream()
-                        .filter(s -> s.getStatus() == SourceStatus.ACTIVE
-                                && s.getLastAttempted() == null)
-                        .findFirst()
-                        .ifPresent(s -> {
-                            queue.offer(s.getIdentifier());
-                            processSourceKey(s.getIdentifier());
-                        });
-            } else {
-                processSourceKey(sourceKey);
+                        .filter(s -> s.getStatus() == SourceStatus.ACTIVE ||
+                              (s.getStatus() == SourceStatus.FAILED  &&
+                                    s.getRecentRuns().stream().limit(5).anyMatch(r -> r.getOutcome().equals("SUCCESS")))
+                               ).forEach(s -> {
+                          queue.offer(s.getIdentifier());
+                      });
             }
+            while (!queue.isEmpty()) {
+                String s = queue.poll();
+                processSourceKey(s);
+            }
+
         } finally {
             running.set(false);
             currentSourceKey.set(null);
@@ -244,9 +246,11 @@ public class HarvestOrchestrator {
     private int processSourceKey(String sourceKey) {
         currentSourceKey.set(sourceKey);
         catalog.updateStatus(sourceKey, SourceStatus.RUNNING);
-        catalog.updateLastAttempted(sourceKey, Instant.now());
 
-        Instant harvestStart = Instant.now();
+
+
+        final Instant harvestStart = Instant.now();
+        catalog.updateLastAttempted(sourceKey, harvestStart);
         int stored = 0;
         int newSources = 0;
         String outcome = "SUCCESS";
@@ -260,8 +264,8 @@ public class HarvestOrchestrator {
 
         log.infov("Harvesting source {0} ({1}), incremental from {2}",
                 sourceKey, source.getOaiUrl(),
-                source.getLastSuccessfulUntil() != null
-                        ? source.getLastSuccessfulUntil() : "beginning");
+                source.getLastSuccessful() != null
+                        ? source.getLastSuccessful() : "beginning");
 
         try {
             HarvestClient client = new HarvestClient(source.getOaiUrl(), doXMLValidation);
@@ -271,8 +275,8 @@ public class HarvestOrchestrator {
                 details = "OAI-PMH validation failed";
                 catalog.updateStatus(sourceKey, SourceStatus.FAILED);
             } else {
-                List<Resource> records = client.getRecords(source.getLastSuccessfulUntil(), null, source.getDiscoverySet());
-                final String path = "harvested/" + makename(sourceKey)+"/rec.xml";
+                List<Resource> records = client.getRecords(source.getLastSuccessful(), null, source.getDiscoverySet());
+                final String path =  makepath(sourceKey);
                 if(!registry.getRegistryStoreInterface().exists(path)) {
                     VOResources ri = VOResources.builder().addResources(records).build();
                     registry.getRegistryStoreInterface().create(xmlUtils.marshallResources(ri), path);
@@ -290,9 +294,8 @@ public class HarvestOrchestrator {
                     }
                 }
 
-                Instant harvestEnd = Instant.now();
-                catalog.updateCursor(sourceKey, harvestEnd);
-                catalog.updateLastSuccessful(sourceKey, harvestEnd);
+
+                catalog.updateLastSuccessful(sourceKey, harvestStart);
                 catalog.updateStatus(sourceKey, SourceStatus.ACTIVE);
                 log.infov("Source {0}: stored {1} records", sourceKey, stored);
 
@@ -306,7 +309,7 @@ public class HarvestOrchestrator {
                     }
                 }
 
-                // Update identifier from identify() response if we don't have one yet
+                // Update identifier from identify() response if we don't have one yet - TODO this is probably over complex - generated by AI
                 if (source.getIdentifier() == null || source.getIdentifier().isEmpty()) {
                     try {
                         Resource identified = client.identify();
@@ -345,8 +348,8 @@ public class HarvestOrchestrator {
         return stored;
     }
 
-    private String makename(String sourceKey) {
-         return sourceKey.substring(6).replaceAll("[^a-z0-9]+", "_");
+    private String makepath(String sourceKey) {
+         return "harvested/"+sourceKey.substring(6).replaceAll("[^a-z0-9]+", "_")+"/rec.xml";
     }
 
     // -------------------------------------------------------------------------
@@ -431,7 +434,6 @@ public class HarvestOrchestrator {
             if (catalog.contains(sourceKey)) {
                 // Already known – update lastSeen but do not re-enqueue here
                 HarvestSource existing = catalog.get(sourceKey).orElseThrow();
-                existing.setLastSeen(java.time.Instant.now());
                 catalog.upsert(existing);
                 log.debugv("Duplicate source – already known: {0}", sourceKey);
                 continue;
@@ -563,6 +565,23 @@ public class HarvestOrchestrator {
         }
     }
 
+    public boolean resetSource(String key) {
+        Optional<HarvestSource> opt = catalog.get(key);
+        if (opt.isEmpty()) {
+            log.warnv("resetSource: unknown source key {0}", key);
+            return false;
+        }
+        HarvestSource s = opt.get();
+        s.setLastSuccessful(null);
+        s.setStatus(SourceStatus.ACTIVE);
+        s.setRejectionReason(null);
+        s.setRecentRuns(new ArrayList<>());
+        catalog.upsert(s);
+        registry.getRegistryStoreInterface().delete(makepath(s.getIdentifier()));
+        queue.offer(key);
+        log.infov("Reset and re-enqueued source {0}", key);
+        return true;
+    }
 
 
     // -------------------------------------------------------------------------

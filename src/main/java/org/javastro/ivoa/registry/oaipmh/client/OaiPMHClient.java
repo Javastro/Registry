@@ -6,6 +6,7 @@ package org.javastro.ivoa.registry.oaipmh.client;
  */
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import jakarta.annotation.Nullable;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.bind.JAXBException;
@@ -90,21 +91,24 @@ public class OaiPMHClient {
    }
 
    public ListIdentifiersType listIdentifiers(String metadataPrefix, String set, Instant from, Instant until, String resumptionToken ){
-      String fromstr = from!=null?from.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT):null;
-      String untilstr = until!=null?until.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT):null;
+      String fromstr = getUtc(from);
+      String untilstr = getUtc(until);
       OAIPMH oai = processOAIPMH(oaiPMHInterface.listIdentifiers(metadataPrefix,fromstr,untilstr,set,resumptionToken)).toCompletableFuture().join();
       return oai.getListIdentifiers();
    }
 
    public ListRecordsType listRecords(String metadataPrefix, String set, Instant from, Instant until, String resumptionToken ){
-      String fromstr = from!=null?from.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT):null;
-      String untilstr = until!=null?until.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT):null;
+      String fromstr = getUtc(from);
+      String untilstr = getUtc(until);
       String metadataPrefixstr = resumptionToken==null|| resumptionToken.isBlank() ?metadataPrefix.trim():null; // IMPL esa reg does not like metadata prefix set when resumption token
       OAIPMH oai = processOAIPMH(oaiPMHInterface.listRecords(metadataPrefixstr,fromstr,untilstr,set,resumptionToken)).toCompletableFuture().join();
       return oai.getListRecords();
    }
 
-
+   @Nullable
+   private static String getUtc(Instant from) {
+      return from != null ? from.truncatedTo(java.time.temporal.ChronoUnit.SECONDS).atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT) : null;
+   }
 
 
    private CompletionStage<OAIPMH> processOAIPMH(CompletionStage<String> response)

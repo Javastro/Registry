@@ -120,6 +120,22 @@ public class HarvestAdminResource {
       return Response.accepted().entity("Source " + key + " disabled").build();
    }
 
+   @Operation(summary = "reset a source",
+         description = "resets the source and the database records for the source, so it can be reharvested from scratch. This is a destructive operation and should be used with caution.")
+   @POST
+   @Path("harvest/source/{key}/reset")
+   @RolesAllowed("update")
+   @Produces(MediaType.TEXT_PLAIN)
+   public Response resetSource(@PathParam("key") String key) {
+      boolean found = harvestOrchestrator.resetSource(key);
+      if (!found) {
+         return Response.status(Response.Status.NOT_FOUND)
+               .entity("Source not found: " + key)
+               .build();
+      }
+      return Response.accepted().entity("Source " + key + " reset").build();
+   }
+
    // -------------------------------------------------------------------------
    // Inner DTO
    // -------------------------------------------------------------------------

@@ -7,6 +7,7 @@ package org.javastro.ivoa.registry.harvesting;
 import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 
 /**
  * JAXB adapter that maps {@link Instant} to/from an ISO-8601 string.
@@ -23,6 +24,6 @@ public class InstantXmlAdapter extends XmlAdapter<String, Instant> {
 
     @Override
     public String marshal(Instant v) {
-        return v != null ? v.toString() : null;
+        return v != null ? DateTimeFormatter.ISO_INSTANT.format(v.truncatedTo(java.time.temporal.ChronoUnit.SECONDS)) : null;
     }
 }

@@ -121,6 +121,12 @@ public class BasexStore  implements RegistryStoreInterface{
    }
 
    @Override
+   public void deleteEntry(Ivoid id) {
+    throw new UnsupportedOperationException("deleteEntry not implemented yet");
+   }
+
+
+   @Override
    public String read(String path) throws BaseXException {
      return new Get(path).execute(context);
    }
@@ -138,8 +144,12 @@ public class BasexStore  implements RegistryStoreInterface{
    }
 
    @Override
-   public void delete(Ivoid id) {
-     log.warn("delete not implemented yet for id="+id); // FIXME implement properly
+   public void delete(String path) {
+      try {
+         new Delete(path).execute(context);
+      } catch (BaseXException e) {
+         throw new RuntimeException(e);
+      }
    }
 
    /**

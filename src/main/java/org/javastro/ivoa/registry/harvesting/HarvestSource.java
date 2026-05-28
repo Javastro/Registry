@@ -28,8 +28,8 @@ import java.util.List;
 @XmlType(propOrder = {
         "identifier", "oaiUrl", "status",
         "discoveredFromSourceKey", "depth", "discoverySet",
-        "firstSeen", "lastSeen", "lastAttempted",
-        "lastSuccessful", "lastSuccessfulUntil",
+        "firstSeen", "lastAttempted",
+        "lastSuccessful",
         "rejectionReason", "recentRuns"
 })
 public class HarvestSource {
@@ -54,17 +54,9 @@ public class HarvestSource {
     @XmlJavaTypeAdapter(InstantXmlAdapter.class)
     private Instant firstSeen;
     @XmlJavaTypeAdapter(InstantXmlAdapter.class)
-    private Instant lastSeen;
-    @XmlJavaTypeAdapter(InstantXmlAdapter.class)
     private Instant lastAttempted;
     @XmlJavaTypeAdapter(InstantXmlAdapter.class)
     private Instant lastSuccessful;
-    /**
-     * The upper bound of the time range used in the last successful harvest.
-     * Used as the {@code from} parameter on the next incremental harvest.
-     */
-    @XmlJavaTypeAdapter(InstantXmlAdapter.class)
-    private Instant lastSuccessfulUntil;
     /** Non-null when status is {@link SourceStatus#REJECTED} or {@link SourceStatus#LIMITED}. */
     private String rejectionReason;
     /** Bounded recent run history – at most {@link #MAX_RECENT_RUNS} entries. */
@@ -89,7 +81,6 @@ public class HarvestSource {
         s.discoverySet = "ivo_managed";
         Instant now = Instant.now();
         s.firstSeen = now;
-        s.lastSeen = now;
         return s;
     }
 
@@ -124,19 +115,11 @@ public class HarvestSource {
     public Instant getFirstSeen() { return firstSeen; }
     public void setFirstSeen(Instant firstSeen) { this.firstSeen = firstSeen; }
 
-    public Instant getLastSeen() { return lastSeen; }
-    public void setLastSeen(Instant lastSeen) { this.lastSeen = lastSeen; }
-
     public Instant getLastAttempted() { return lastAttempted; }
     public void setLastAttempted(Instant lastAttempted) { this.lastAttempted = lastAttempted; }
 
     public Instant getLastSuccessful() { return lastSuccessful; }
     public void setLastSuccessful(Instant lastSuccessful) { this.lastSuccessful = lastSuccessful; }
-
-    public Instant getLastSuccessfulUntil() { return lastSuccessfulUntil; }
-    public void setLastSuccessfulUntil(Instant lastSuccessfulUntil) {
-        this.lastSuccessfulUntil = lastSuccessfulUntil;
-    }
 
     public String getRejectionReason() { return rejectionReason; }
     public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
