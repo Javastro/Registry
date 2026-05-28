@@ -117,6 +117,7 @@ public class OaiPMHClient {
             ValidationEventCollector validationEventCollector = new ValidationEventCollector();
             um.setEventHandler(validationEventCollector);
             if (doXMLValidation) {
+               //TODO perhaps nice to get all of the validation messages, but this would involve reading twice
                SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
                Schema schema = sf.newSchema(SchemaMap.getRegistrySchemaAsSources());
                sf.setResourceResolver(makeXMLResolver().getLSResourceResolver());
@@ -124,7 +125,6 @@ public class OaiPMHClient {
             }
 
             Source ss = new StreamSource(new StringReader(xmlResponse));
-            //TODO add schema validation.
 
             JAXBElement<OAIPMH> retvalEl = um.unmarshal(ss, OAIPMH.class);
             retval = retvalEl.getValue();

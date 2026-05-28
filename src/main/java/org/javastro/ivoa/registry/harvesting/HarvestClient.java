@@ -31,9 +31,8 @@ public class HarvestClient {
    public static final String IVO_MANAGED_SET = "ivo_managed";
    private static final org.slf4j.Logger log = LoggerFactory.getLogger(HarvestClient.class);
    final OaiPMHClient client;
-   public HarvestClient(String url) {
-      client = new OaiPMHClient(url,false);
-
+   public HarvestClient(String url, boolean doXMLValidation) {
+      client = new OaiPMHClient(url, doXMLValidation);
    }
 
    /**

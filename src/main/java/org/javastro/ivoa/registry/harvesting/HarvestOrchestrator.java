@@ -73,6 +73,8 @@ public class HarvestOrchestrator {
     @ConfigProperty(name = "ivoa.harvesting.discovery.max-per-run", defaultValue = "5")
     int maxPerRun;
 
+    @ConfigProperty(name = "ivoa.harvesting.discovery.doXMLValidation", defaultValue = "true")
+    boolean doXMLValidation;
 
     static final String REGISTRY_STANDARD_ID_PREFIX = "ivo://ivoa.net/std/Registry";
     // -------------------------------------------------------------------------
@@ -262,7 +264,7 @@ public class HarvestOrchestrator {
                         ? source.getLastSuccessfulUntil() : "beginning");
 
         try {
-            HarvestClient client = new HarvestClient(source.getOaiUrl());
+            HarvestClient client = new HarvestClient(source.getOaiUrl(), doXMLValidation);
             if (!client.validate()) {
                 log.errorv("Source {0} failed OAI-PMH validation", sourceKey);
                 outcome = "FAILED";
@@ -439,7 +441,7 @@ public class HarvestOrchestrator {
             log.infov("Validating candidate registry at {0}", candidateUrl);
             boolean valid;
             try {
-                HarvestClient client = new HarvestClient(candidateUrl);
+                HarvestClient client = new HarvestClient(candidateUrl, doXMLValidation);
                 valid = client.validate();
             } catch (Exception e) {
                 valid = false;
