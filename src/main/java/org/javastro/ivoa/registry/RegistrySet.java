@@ -19,6 +19,10 @@ public class RegistrySet {
     final ObjectFactory dcfactory = new ObjectFactory();
     Namespaces dcNS =Namespaces.DC;
 
+    public String getName() {
+        return name;
+    }
+
     final String name;
 
     public RegistrySet(String name, String description) {
@@ -33,8 +37,8 @@ public class RegistrySet {
         return new SetType(name,name, List.of(new DescriptionType(new Dc(List.of(dcfactory.createDescription(new ElementType(description,"en")))))));
     }
 
-    static final RegistrySet IVO_MANAGED = new RegistrySet("ivo_managed","This set returns the records that are solely managed by this\n" +
+    static public final RegistrySet IVO_MANAGED = new RegistrySet("ivo_managed","This set returns the records that are solely managed by this\n" +
           "      registry--that is, records that created by this registry.");
-    static final RegistrySet IVO_HARVESTED = new RegistrySet("ivoa_harvested","This set returns the records that are harvested by this registry from other registries.");
-    static final RegistrySet IVO_ALL = new RegistrySet("ivo_all","This set returns all records in the registry.");
+    static public final RegistrySet IVO_HARVESTED = new RegistrySet("ivoa_harvested","This set returns the records that are harvested by this registry from other registries.");
+    static public final RegistrySet IVO_ALL = new RegistrySet("ivo_all","This set returns all records in the registry.");
 }

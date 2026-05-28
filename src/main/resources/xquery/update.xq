@@ -9,6 +9,8 @@ declare variable $path as xs:string external;
 IMPL not sure is this is the most efficient, but it seems to work
 :)
 
+(:let $_ := admin:write-log('writing to  ' || $path, 'INFO')
+cannot put this here, as it then becomes the expression ....:)
 
 for $r in fn:collection(fn:string-join(("Registry/",$path)))/ri:VOResources
    let $in := fn:parse-xml($rin)//ri:Resource
@@ -20,6 +22,7 @@ for $r in fn:collection(fn:string-join(("Registry/",$path)))/ri:VOResources
   for $u in 
       fn:collection(fn:string-join(("Registry/",$path)))/ri:VOResources/ri:Resource[identifier = ($existingIDs)]
       let $upid := $u/identifier
+     
     return replace node $u with $in[identifier=$upid])
     
        

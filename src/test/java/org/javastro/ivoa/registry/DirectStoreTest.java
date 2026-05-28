@@ -7,7 +7,6 @@ package org.javastro.ivoa.registry;
 import org.javastro.ivoa.entities.Ivoid;
 import org.javastro.ivoa.registry.internal.BaseXQuery;
 import org.javastro.ivoa.registry.internal.BasexStore;
-import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,7 +29,7 @@ public class DirectStoreTest {
       InputStream sin = BasexStore.class.getResourceAsStream("/VOResource.xml");
       assertNotNull(sin);
       String xml = new String(sin.readAllBytes());
-      store.create(xml);
+      store.createEntry(xml);
       result = query.oaiListIDs(null, ZonedDateTime.now(),"ivo_managed","ivo_vor");
       assertNotNull(result);
       result = query.oaiListRecords(null, ZonedDateTime.now(),"ivo_managed","ivo_vor");

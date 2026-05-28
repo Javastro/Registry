@@ -96,22 +96,25 @@ public class BasexStore  implements RegistryStoreInterface{
        }
     }
 
-
-
    @Override
-   public void create(String xml) {
-
-     create(xml, "managed/base.xml");
+   public void create(String content, String path) {
+      try {
+         new Put(path, content).execute(context);
+      } catch (BaseXException e) {
+         throw new RuntimeException(e);
+      }
    }
 
+
+
    @Override
-   public void create(String xml, String path) {
+   public void createEntry(String xml, String path) {
       try( QueryProcessor proc = new QueryProcessor(updateQuery, context))
       {
          proc.variable("rin", xml);
          proc.variable("path", path);
          Value result = proc.value();
-
+         log.debug(result.toString());
       } catch (QueryException e) {
          throw new RuntimeException(e);
       }
@@ -119,14 +122,7 @@ public class BasexStore  implements RegistryStoreInterface{
 
    @Override
    public String read(String path) throws BaseXException {
-      try( QueryProcessor proc = new QueryProcessor("doc('"+REGDB_NAME+"')/"+path, context))
-      {
-         Value result = proc.value();
-         return result.toString();
-
-      } catch (QueryException e) {
-         throw new RuntimeException(e);
-      }
+     return new Get(path).execute(context);
    }
 
    @Override

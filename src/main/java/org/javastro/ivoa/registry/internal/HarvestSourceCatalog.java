@@ -1,7 +1,7 @@
 package org.javastro.ivoa.registry.internal;
 
 /*
- * Created on 28/04/2026 by Paul Harrison (paul.harrison@manchester.ac.uk).
+ * Created on 28/04/26 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -59,7 +59,7 @@ public class HarvestSourceCatalog  {
         try {
             jaxbContext = JAXBContext.newInstance(HarvestSourceList.class);
         } catch (JAXBException e) {
-            throw new RuntimeException("Cannot create JAXB context for harvest catalog", e);
+            throw new RuntimeException("Cannot createEntry JAXB context for harvest catalog", e);
         }
     }
 
@@ -84,6 +84,7 @@ public class HarvestSourceCatalog  {
 
 
                 final HarvestSource e1 = HarvestSource.create(rofrIvoid,rofrUrl,null,0);
+                //e1.setDiscoverySet("ivo_publishers");//TODO restore when https://github.com/ivoa/registry-housekeeping/issues/10 fixed
                 store.create(serializeToXml(List.of(e1)),CATALOG_PATH);
             }
             String xml = store.read(CATALOG_PATH);
@@ -221,6 +222,7 @@ public class HarvestSourceCatalog  {
     // -------------------------------------------------------------------------
 
     private void persist() {
+        // Persist catalog as a standalone document; createEntry/update.xq only mutates ri:VOResources.
         store.create(serializeToXml(), CATALOG_PATH);
     }
 
@@ -264,4 +266,3 @@ public class HarvestSourceCatalog  {
         }
     }
 }
-

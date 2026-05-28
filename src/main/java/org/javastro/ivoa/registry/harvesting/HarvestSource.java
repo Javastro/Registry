@@ -27,7 +27,7 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(propOrder = {
         "identifier", "oaiUrl", "status",
-        "discoveredFromSourceKey", "depth",
+        "discoveredFromSourceKey", "depth", "discoverySet",
         "firstSeen", "lastSeen", "lastAttempted",
         "lastSuccessful", "lastSuccessfulUntil",
         "rejectionReason", "recentRuns"
@@ -47,6 +47,9 @@ public class HarvestSource {
     private String discoveredFromSourceKey;
     /** Hop distance from the seed (0 = seed). */
     private int depth;
+
+
+    private String discoverySet;
 
     @XmlJavaTypeAdapter(InstantXmlAdapter.class)
     private Instant firstSeen;
@@ -83,6 +86,7 @@ public class HarvestSource {
         s.status = SourceStatus.QUEUED;
         s.discoveredFromSourceKey = discoveredFromSourceKey != null ? discoveredFromSourceKey : "";
         s.depth = depth;
+        s.discoverySet = "ivo_managed";
         Instant now = Instant.now();
         s.firstSeen = now;
         s.lastSeen = now;
@@ -139,5 +143,13 @@ public class HarvestSource {
 
     public List<HarvestRunRecord> getRecentRuns() { return recentRuns; }
     public void setRecentRuns(List<HarvestRunRecord> recentRuns) { this.recentRuns = recentRuns; }
+    public String getDiscoverySet() {
+        return discoverySet;
+    }
+
+    public void setDiscoverySet(String discoverySet) {
+        this.discoverySet = discoverySet;
+    }
+
 }
 

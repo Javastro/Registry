@@ -80,12 +80,16 @@ public class HarvestClient {
    }
 
    public List<HeaderType> getIdentifiers(Instant from, Instant until){
+      return getIdentifiers(from, until, IVO_MANAGED_SET);
+   }
+
+   public List<HeaderType> getIdentifiers(Instant from, Instant until, String set){
       List<HeaderType> hh = new ArrayList<>();
       String resumptionToken = null;
       int total; //IMPL all this complexity with total and cursor is to deal with implementations that do not return cursor values and then only to provide a log!
       int cursor = 0;
       do {
-         ListIdentifiersType li = client.listIdentifiers(resumptionToken==null?METADATA_PREFIX:null, IVO_MANAGED_SET, from, until, resumptionToken);
+         ListIdentifiersType li = client.listIdentifiers(resumptionToken==null?METADATA_PREFIX:null, set, from, until, resumptionToken);
          if (li == null) {
             // OAI error response (e.g. noRecordsMatch) — no identifiers to harvest
             LOG.infov("listIdentifiers returned no result (OAI error or empty response) for {0}", client.getUrl());
@@ -114,13 +118,17 @@ public class HarvestClient {
       return r.getMetadata() != null && r.getMetadata().getAny() instanceof ResourceInstance;
    }
 
+
    public List<Resource> getRecords(Instant from, Instant until){
+      return getRecords(from, until, IVO_MANAGED_SET);
+   }
+   public List<Resource> getRecords(Instant from, Instant until, String set){
       Stream<Resource> sr = Stream.<Resource>empty();
       String resumptionToken = null;
       int total;
       int cursor = 0;
       do {
-         ListRecordsType rec = client.listRecords(METADATA_PREFIX, IVO_MANAGED_SET, from, until, resumptionToken);
+         ListRecordsType rec = client.listRecords(METADATA_PREFIX, set, from, until, resumptionToken);
          if (rec == null) {
             // OAI error response (e.g. noRecordsMatch) — no records to harvest
             LOG.infov("listRecords returned no result (OAI error or empty response) for {0}", client.getUrl());
@@ -141,7 +149,7 @@ public class HarvestClient {
             total = rec.getRecords().size();
          }
          LOG.infov("returned: {0} of {1}",cursor+rec.getRecords().size(),total);
-      } while (resumptionToken != null);
+      } while (resumptionToken != null && !resumptionToken.isBlank());
       return sr.collect(Collectors.toList());
    }
 

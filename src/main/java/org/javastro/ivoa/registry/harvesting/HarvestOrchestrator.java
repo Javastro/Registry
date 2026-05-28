@@ -7,12 +7,14 @@ package org.javastro.ivoa.registry.harvesting;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.xml.bind.JAXBElement;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.javastro.ivoa.entities.resource.AccessURL;
 import org.javastro.ivoa.entities.resource.Capability;
 import org.javastro.ivoa.entities.resource.Resource;
 import org.javastro.ivoa.entities.resource.registry.Harvest;
 import org.javastro.ivoa.entities.resource.registry.OAIHTTP;
+import org.javastro.ivoa.entities.resource.registry.iface.VOResources;
 import org.javastro.ivoa.registry.Registry;
 import org.javastro.ivoa.registry.XMLUtils;
 import org.javastro.ivoa.registry.internal.HarvestSourceCatalog;
@@ -228,6 +230,9 @@ public class HarvestOrchestrator {
         return true;
     }
 
+    public void addSource(String key, String url) {
+        catalog.upsert(HarvestSource.create(key, url, null, 0));
+    }
 
 
     // -------------------------------------------------------------------------
@@ -264,14 +269,22 @@ public class HarvestOrchestrator {
                 details = "OAI-PMH validation failed";
                 catalog.updateStatus(sourceKey, SourceStatus.FAILED);
             } else {
-                List<Resource> records = client.getRecords(source.getLastSuccessfulUntil(), null);
-                for (Resource resource : records) {
-                    try {
-                        registry.getRegistryStoreInterface().create(xmlUtils.marshall(resource));
-                        stored++;
-                    } catch (Exception e) {
-                        log.errorv("Failed to store resource {0}: {1}",
-                                resource.getIdentifier(), e.getMessage());
+                List<Resource> records = client.getRecords(source.getLastSuccessfulUntil(), null, source.getDiscoverySet());
+                final String path = "harvested/" + makename(sourceKey)+"/rec.xml";
+                if(!registry.getRegistryStoreInterface().exists(path)) {
+                    VOResources ri = VOResources.builder().addResources(records).build();
+                    registry.getRegistryStoreInterface().create(xmlUtils.marshallResources(ri), path);
+                    stored = records.size();
+                }
+                else {
+                    for (Resource resource : records) {
+                        try {
+                            registry.getRegistryStoreInterface().createEntry(xmlUtils.marshall(resource), path);
+                            stored++;
+                        } catch (Exception e) {
+                            log.errorv("Failed to store resource {0}: {1}",
+                                  resource.getIdentifier(), e.getMessage());
+                        }
                     }
                 }
 
@@ -328,6 +341,10 @@ public class HarvestOrchestrator {
                 harvestStart, Instant.now(), stored, newSources, outcome, details));
 
         return stored;
+    }
+
+    private String makename(String sourceKey) {
+         return sourceKey.substring(6).replaceAll("[^a-z0-9]+", "_");
     }
 
     // -------------------------------------------------------------------------

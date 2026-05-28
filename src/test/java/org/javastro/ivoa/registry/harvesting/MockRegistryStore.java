@@ -21,12 +21,12 @@ public class MockRegistryStore implements RegistryStoreInterface {
     }
 
     @Override
-    public void create(String xml) {
-     log.info("MockRegistryStore created xml: {}", xml);
+    public void create(String content, String path) {
+        log.info("MockRegistryStore created content at {}",path);
     }
 
     @Override
-    public void create(String xml, String path) {
+    public void createEntry(String xml, String path) {
      log.info("MockRegistryStore created xml: {}, path: {}", xml, path);
 
     }

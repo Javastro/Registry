@@ -58,6 +58,13 @@ public class XMLUtils {
       }
    }
 
+   public  String marshallResources(VOResources a) {
+      return marshallElement(new JAXBElement<VOResources>(
+            new QName(ns.getNamespace(), "VOResources", ns.getPrefix()),
+            VOResources.class, a));
+   }
+
+
    @SuppressWarnings("unchecked")
    public <T> String marshall(T a) {
       return marshallElement(new JAXBElement<T>(

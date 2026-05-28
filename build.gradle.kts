@@ -31,6 +31,7 @@ dependencies {
     implementation("io.quarkus:quarkus-smallrye-graphql")
 
     implementation("io.quarkus:quarkus-kubernetes")
+    implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
     implementation("io.quarkus:quarkus-container-image-docker")
    // implementation("io.quarkus:quarkus-resteasy-reactive")
     testImplementation("io.quarkus:quarkus-junit5")
