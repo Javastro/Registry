@@ -99,7 +99,8 @@ public class OaiPMHClient {
    public ListRecordsType listRecords(String metadataPrefix, String set, Instant from, Instant until, String resumptionToken ){
       String fromstr = from!=null?from.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT):null;
       String untilstr = until!=null?until.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT):null;
-      OAIPMH oai = processOAIPMH(oaiPMHInterface.listRecords(metadataPrefix,fromstr,untilstr,set,resumptionToken)).toCompletableFuture().join();
+      String metadataPrefixstr = resumptionToken==null|| resumptionToken.isBlank() ?metadataPrefix.trim():null; // IMPL esa reg does not like metadata prefix set when resumption token
+      OAIPMH oai = processOAIPMH(oaiPMHInterface.listRecords(metadataPrefixstr,fromstr,untilstr,set,resumptionToken)).toCompletableFuture().join();
       return oai.getListRecords();
    }
 
