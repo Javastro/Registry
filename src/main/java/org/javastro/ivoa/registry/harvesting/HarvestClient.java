@@ -35,10 +35,24 @@ public class HarvestClient {
    private String resumptionToken = null;
    private int total;
    private int cursor = 0;
+   private final int harvestChunkSize;
 
 
-
-   public HarvestClient(String url, boolean doXMLValidation) {
+   /**
+    * Create a new harvest client for the given registry OAI-PMH URL.
+    *
+    * The client creates objects for the responses and will do XML validation if required.
+    * Note, however, that failed validation will fail the operations. Otherwise it is somewhat lax in its parsing.
+    *
+    * OAI-PMH services are able to chunk their responses - the client will automatically handle the continuation. It is possible to
+    * limit the number of records returned in a single call to getRecords, which may be useful for very large harvests.
+    *
+    * @param url The oai-pmh endpoint of the registry to harvest.
+    * @param doXMLValidation if true do XML validation of the responses.
+    * @param harvestChunkSize the maximum number of records to return in a single call to getRecords - 0 means return whatever the registry gives in a single response.
+    */
+   public HarvestClient(String url, boolean doXMLValidation, int harvestChunkSize) {
+      this.harvestChunkSize = harvestChunkSize;
       client = new OaiPMHClient(url, doXMLValidation);
       resetCursor();
    }
@@ -157,8 +171,8 @@ public class HarvestClient {
             resumptionToken = null;
             total = rec.getRecords().size();
          }
-         LOG.infov("returned: {0} of {1}",cursor+rec.getRecords().size(),total);
-      } while (resumptionToken != null && !resumptionToken.isBlank());
+         LOG.infov("returned: {0} of {1}",cursor,total);
+      } while (sr.size() < harvestChunkSize && !(sr.size() == total)); // allow fairly big in memory store to build up
       return sr;
    }
  

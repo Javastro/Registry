@@ -268,7 +268,7 @@ public class HarvestOrchestrator {
                         ? source.getLastSuccessful() : "beginning");
 
         try {
-            HarvestClient client = new HarvestClient(source.getOaiUrl(), doXMLValidation);
+            HarvestClient client = new HarvestClient(source.getOaiUrl(), doXMLValidation, 2000);
             if (!client.validate()) {
                 log.errorv("Source {0} failed OAI-PMH validation", sourceKey);
                 outcome = "FAILED";
@@ -453,7 +453,7 @@ public class HarvestOrchestrator {
             log.infov("Validating candidate registry at {0}", candidateUrl);
             boolean valid;
             try {
-                HarvestClient client = new HarvestClient(candidateUrl, doXMLValidation);
+                HarvestClient client = new HarvestClient(candidateUrl, doXMLValidation, 0);
                 valid = client.validate();
             } catch (Exception e) {
                 valid = false;
