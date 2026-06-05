@@ -7,7 +7,6 @@ package org.javastro.ivoa.registry;
 import org.javastro.ivoa.entities.Ivoid;
 import org.javastro.ivoa.registry.internal.BaseXQuery;
 import org.javastro.ivoa.registry.internal.BasexStore;
-import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,14 +23,13 @@ public class DirectStoreTest {
    //  @Test // this is probably not a good unit test, as it will attempt to access the backend simultaneously to  the more standard client side tests
    public void doinit() throws IOException, URISyntaxException {
       BasexStore store = new BasexStore();
-      BaseXQuery query = new BaseXQuery();
-      query.open();
+      BaseXQuery query = new BaseXQuery(store);
       String result = query.xquery("//ri:Resource");
       assertNotNull(result);
       InputStream sin = BasexStore.class.getResourceAsStream("/VOResource.xml");
       assertNotNull(sin);
       String xml = new String(sin.readAllBytes());
-      store.create(xml);
+      store.createEntry(xml);
       result = query.oaiListIDs(null, ZonedDateTime.now(),"ivo_managed","ivo_vor");
       assertNotNull(result);
       result = query.oaiListRecords(null, ZonedDateTime.now(),"ivo_managed","ivo_vor");

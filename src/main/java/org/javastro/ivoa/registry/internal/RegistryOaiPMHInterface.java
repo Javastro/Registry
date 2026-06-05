@@ -6,15 +6,10 @@ package org.javastro.ivoa.registry.internal;
  */
 
 import org.javastro.ivoa.entities.Ivoid;
-import org.javastro.ivoa.entities.resource.Resource;
 
 import java.time.ZonedDateTime;
-import java.util.List;
 
-public interface RegistryInterface {
-   void open();
-
-   void close();
+public interface RegistryOaiPMHInterface {
 
    String oaiListIDs(ZonedDateTime start, ZonedDateTime end, String setName, String metadataPrefix) ;
    String oaiListRecords(ZonedDateTime start, ZonedDateTime end, String setName, String metadataPrefix);

@@ -6,13 +6,13 @@ package org.javastro.ivoa.registry.oaipmh.client;
  */
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import jakarta.annotation.Nullable;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
 import jakarta.xml.bind.util.ValidationEventCollector;
-import org.javastro.ivoa.entities.IvoaJAXBContextFactory;
-import org.javastro.ivoa.entities.resource.registry.oaipmh.*;
+import org.javastro.ivoa.entities.oai.oaipmh.*;
 import org.javastro.ivoa.schema.SchemaMap;
 import org.jboss.logging.Logger;
 import org.xml.sax.InputSource;
@@ -51,14 +51,27 @@ public class OaiPMHClient {
 
    /**
     * Create an OaiPMH client.
-    * @param url the OAIPMH endpoint to connect to.
-    * @param doXMLValidation  if true then XML validation is done, otherwise the more lax interpretation that JAXB does is the default.
+    *
+    * @param url             the OAIPMH endpoint to connect to.
+    * @param doXMLValidation if true then XML validation is done, otherwise the more lax interpretation that JAXB does is the default.
     */
    public  OaiPMHClient(String url, boolean doXMLValidation){
       this.url = url;
       this.doXMLValidation = doXMLValidation;
       try {
-         jaxbconxt = IvoaJAXBContextFactory.newInstance();
+         /*
+         There is a choice here in the design - it is possible to limit the scope so that only the OAI classes are
+         exposed to JAXB, which will result in the actual metadata content returned as DOM objects - this is good
+         as it means that the content can be anything.
+
+         The second approach is to map all of the standard Registry classes too - this normalizes the harvested
+         records to be registry compliant.
+          */
+         jaxbconxt = JAXBContext.newInstance(
+               "org.javastro.ivoa.entities.oai.oaipmh"
+                     + ":org.javastro.ivoa.entities.oai.dublincore"
+                     + ":org.javastro.ivoa.entities.oai.dublincore.simple");
+         ;
       } catch (JAXBException e) {
          throw new RuntimeException(e);
       }
@@ -90,20 +103,25 @@ public class OaiPMHClient {
    }
 
    public ListIdentifiersType listIdentifiers(String metadataPrefix, String set, Instant from, Instant until, String resumptionToken ){
-      String fromstr = from!=null?from.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT):null;
-      String untilstr = until!=null?until.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT):null;
+      String fromstr = getUtc(from);
+      String untilstr = getUtc(until);
       OAIPMH oai = processOAIPMH(oaiPMHInterface.listIdentifiers(metadataPrefix,fromstr,untilstr,set,resumptionToken)).toCompletableFuture().join();
       return oai.getListIdentifiers();
    }
 
    public ListRecordsType listRecords(String metadataPrefix, String set, Instant from, Instant until, String resumptionToken ){
-      String fromstr = from!=null?from.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT):null;
-      String untilstr = until!=null?until.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT):null;
-      OAIPMH oai = processOAIPMH(oaiPMHInterface.listRecords(metadataPrefix,fromstr,untilstr,set,resumptionToken)).toCompletableFuture().join();
+      String fromstr = getUtc(from);
+      String untilstr = getUtc(until);
+      String resumptionTokenstr = resumptionToken==null|| resumptionToken.isBlank() ?null:resumptionToken.trim(); // IMPL esa reg does not like resumption token set when metadata prefix
+      String metadataPrefixstr = resumptionToken==null|| resumptionToken.isBlank() ?metadataPrefix.trim():null; // IMPL esa reg does not like metadata prefix set when resumption token
+      OAIPMH oai = processOAIPMH(oaiPMHInterface.listRecords(metadataPrefixstr,fromstr,untilstr,set,resumptionTokenstr)).toCompletableFuture().join();
       return oai.getListRecords();
    }
 
-
+   @Nullable
+   private static String getUtc(Instant from) {
+      return from != null ? from.truncatedTo(java.time.temporal.ChronoUnit.SECONDS).atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT) : null;
+   }
 
 
    private CompletionStage<OAIPMH> processOAIPMH(CompletionStage<String> response)
@@ -116,6 +134,7 @@ public class OaiPMHClient {
             ValidationEventCollector validationEventCollector = new ValidationEventCollector();
             um.setEventHandler(validationEventCollector);
             if (doXMLValidation) {
+               //TODO perhaps nice to get all of the validation messages, but this would involve reading twice
                SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
                Schema schema = sf.newSchema(SchemaMap.getRegistrySchemaAsSources());
                sf.setResourceResolver(makeXMLResolver().getLSResourceResolver());
@@ -123,14 +142,14 @@ public class OaiPMHClient {
             }
 
             Source ss = new StreamSource(new StringReader(xmlResponse));
-            //TODO add schema validation.
 
             JAXBElement<OAIPMH> retvalEl = um.unmarshal(ss, OAIPMH.class);
             retval = retvalEl.getValue();
             if (!retval.getErrors().isEmpty()) {
                 for(OAIPMHerrorType e:retval.getErrors())
                 {
-                   LOG.error(e); //TODO throw as exception?
+                   //only log as warning as no records match is returned as a error...
+                   LOG.warn(e); //TODO throw as exception?
                 }
             }
 
@@ -139,9 +158,7 @@ public class OaiPMHClient {
          }
          return retval;
       }).exceptionally(throwable -> {
-         // Handle errors
-         System.err.println("Error: " + throwable.getMessage());
-         return null; // Or throw a RuntimeException if you prefer
+         throw new RuntimeException("OAI-PMH request to " + url + " failed: " + throwable.getMessage(), throwable);
       });
    }
 

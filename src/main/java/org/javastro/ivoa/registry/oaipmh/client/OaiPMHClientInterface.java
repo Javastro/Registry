@@ -16,7 +16,7 @@ import java.util.concurrent.CompletionStage;
 
 
 @RegisterRestClient
-@Produces({MediaType.TEXT_XML,MediaType.APPLICATION_XML})
+@Produces({MediaType.TEXT_XML,MediaType.APPLICATION_XML, MediaType.WILDCARD})
 public interface OaiPMHClientInterface {
 
     @GET
