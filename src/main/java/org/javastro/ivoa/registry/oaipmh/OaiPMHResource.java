@@ -11,7 +11,7 @@ import jakarta.xml.bind.JAXBException;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.javastro.ivoa.entities.Ivoid;
-import org.javastro.ivoa.entities.resource.registry.oaipmh.*;
+import org.javastro.ivoa.entities.oai.oaipmh.*;
 import org.javastro.ivoa.registry.Registry;
 import org.javastro.ivoa.registry.RegistrySet;
 import org.javastro.ivoa.registry.XMLUtils;

@@ -12,7 +12,7 @@ import org.javastro.ivoa.entities.resource.Service;
 
 import java.util.List;
 
-public interface RegistryQueryInterface extends RegistryInterface {
+public interface RegistryQueryInterface extends RegistryOaiPMHInterface {
 
    String xquery(String query) throws BaseXException;
 

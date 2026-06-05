@@ -28,7 +28,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 @ApplicationScoped
@@ -79,9 +78,9 @@ public class Registry {
           Creator c = authority.getCuration().getCreators().get(0);
           c.setName(ResourceName.builder().withValue(organizationName).build());
           setContact(authority);
-          registryStoreInterface.create(xmlUtils.marshall(authority));
+          registryStoreInterface.createEntry(xmlUtils.marshall(authority));
        } catch (JAXBException | IOException | SAXException e) {
-          throw new RuntimeException("cannot create authority",e); //IMPL this is probably terminal at this stage.
+          throw new RuntimeException("cannot createEntry authority",e); //IMPL this is probably terminal at this stage.
        }
 
        try {
@@ -151,17 +150,16 @@ public class Registry {
           auths.addAll(managedAuthorities.stream().map(Resource::getIdentifier).toList());
 
 
-          registryStoreInterface.create(xmlUtils.marshall(thisRegistry));
+          registryStoreInterface.createEntry(xmlUtils.marshall(thisRegistry));
        } catch (JAXBException | SAXException | IOException | URISyntaxException e) {
-          throw new RuntimeException("cannot create registry record",e);
+          throw new RuntimeException("cannot createEntry registry record",e);
        }
-      registryQueryInterface.open();
+      registryStoreInterface.open();
 
     }
 
     void onStop(@Observes ShutdownEvent ev) {
        log.info("registry stopping");
-       registryQueryInterface.close();
        registryStoreInterface.close();
     }
 
