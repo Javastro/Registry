@@ -6,17 +6,16 @@ package org.javastro.ivoa.registry.harvesting;
  */
 
 import org.javastro.ivoa.entities.resource.Resource;
-import org.javastro.ivoa.entities.resource.registry.iface.ResourceInstance;
-import org.javastro.ivoa.entities.resource.registry.oaipmh.*;
+import org.javastro.ivoa.entities.oai.oaipmh.*;
+import org.javastro.ivoa.registry.XMLUtils;
 import org.javastro.ivoa.registry.oaipmh.client.OaiPMHClient;
 import org.jboss.logging.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A registry client that will directly return Registry objects.
@@ -31,8 +30,26 @@ public class HarvestClient {
    public static final String IVO_MANAGED_SET = "ivo_managed";
    private static final org.slf4j.Logger log = LoggerFactory.getLogger(HarvestClient.class);
    final OaiPMHClient client;
+   private final XMLUtils xmlUtils = new XMLUtils();
+
+   private String resumptionToken = null;
+   private int total;
+   private int cursor = 0;
+
+
+
    public HarvestClient(String url, boolean doXMLValidation) {
       client = new OaiPMHClient(url, doXMLValidation);
+      resetCursor();
+   }
+
+   public void resetCursor() {
+      resumptionToken = null;
+      total = 0;
+      cursor = 0;
+   }
+   public boolean hasMoreRecords() {
+      return resumptionToken != null && !resumptionToken.isBlank();
    }
 
    /**
@@ -68,14 +85,14 @@ public class HarvestClient {
    {
       IdentifyType r = client.identify();
 
-      return ((ResourceInstance) r.getDescriptions().get(0).getAny()).getValue();
+      return xmlUtils.OaiIdentifyToResource(r) ;
    }
 
 
    public Resource getRecord(String identifier)
    {
       RecordType r = client.getRecord(identifier, METADATA_PREFIX);
-      return ((ResourceInstance)r.getMetadata().getAny()).getValue();
+      return xmlUtils.OaiMetadataToResource(r) ;
    }
 
    public List<HeaderType> getIdentifiers(Instant from, Instant until){
@@ -84,9 +101,7 @@ public class HarvestClient {
 
    public List<HeaderType> getIdentifiers(Instant from, Instant until, String set){
       List<HeaderType> hh = new ArrayList<>();
-      String resumptionToken = null;
-      int total; //IMPL all this complexity with total and cursor is to deal with implementations that do not return cursor values and then only to provide a log!
-      int cursor = 0;
+
       do {
          ListIdentifiersType li = client.listIdentifiers(resumptionToken==null?METADATA_PREFIX:null, set, from, until, resumptionToken);
          if (li == null) {
@@ -114,28 +129,23 @@ public class HarvestClient {
 
    /** Returns true for OAI-PMH records that contain a parseable VOResource metadata element. */
    private static boolean isHarvestableRecord(RecordType r) {
-      return r.getMetadata() != null && r.getMetadata().getAny() instanceof ResourceInstance;
+      return r.getMetadata() != null && r.getMetadata().getAny() instanceof Node && ((Node)r.getMetadata().getAny()).hasChildNodes();//TODO this is quite a weak test
    }
 
-
-   public List<Resource> getRecords(Instant from, Instant until){
+   public List<RecordType> getRecords(Instant from, Instant until){
       return getRecords(from, until, IVO_MANAGED_SET);
    }
-   public List<Resource> getRecords(Instant from, Instant until, String set){
-      Stream<Resource> sr = Stream.<Resource>empty();
-      String resumptionToken = null;
-      int total;
-      int cursor = 0;
+
+   public List<RecordType> getRecords(Instant from, Instant until, String set){
+      List<RecordType> sr = new ArrayList<>();
       do {
          ListRecordsType rec = client.listRecords(METADATA_PREFIX, set, from, until, resumptionToken);
-         if (rec == null) {
+         if (rec == null || rec.getRecords().isEmpty()) {
             // OAI error response (e.g. noRecordsMatch) — no records to harvest
             LOG.infov("listRecords returned no result (OAI error or empty response) for {0}", client.getUrl());
             break;
          }
-         sr = Stream.concat(sr, rec.getRecords().stream()
-               .filter(HarvestClient::isHarvestableRecord)
-               .map(r -> ((ResourceInstance) r.getMetadata().getAny()).getValue()));
+         sr.addAll(rec.getRecords());
          if(rec.getResumptionToken()!=null)
          {
             total = rec.getResumptionToken().getCompleteListSize().intValue();
@@ -149,7 +159,9 @@ public class HarvestClient {
          }
          LOG.infov("returned: {0} of {1}",cursor+rec.getRecords().size(),total);
       } while (resumptionToken != null && !resumptionToken.isBlank());
-      return sr.collect(Collectors.toList());
+      return sr;
    }
+ 
+
 
 }

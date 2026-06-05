@@ -2,12 +2,13 @@ package org.javastro.ivoa.registry.client;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.javastro.ivoa.entities.resource.Resource;
-import org.javastro.ivoa.entities.resource.registry.iface.ResourceInstance;
-import org.javastro.ivoa.entities.resource.registry.oaipmh.*;
+import org.javastro.ivoa.entities.oai.oaipmh.*;
+import org.javastro.ivoa.registry.XMLUtils;
 import org.javastro.ivoa.registry.oaipmh.client.OaiPMHClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Node;
 
 import java.time.Instant;
 
@@ -22,6 +23,7 @@ class OaiPMHClientTest {
 
 
    private OaiPMHClient client;
+   private XMLUtils xmlUtils = new XMLUtils();
 
    @BeforeEach
    void setUp() {
@@ -34,7 +36,7 @@ class OaiPMHClientTest {
        IdentifyType id = client.identify();
        assertNotNull(id);
        assertEquals(1,id.getDescriptions().size(), "there should only be 1 identify description");
-       Resource res = ((ResourceInstance)(id.getDescriptions().get(0).getAny())).getValue();
+       Resource res = xmlUtils.extractResource((Node) id.getDescriptions().get(0).getAny());
        System.out.println(res.getIdentifier());
    }
 
@@ -57,7 +59,7 @@ class OaiPMHClientTest {
    void getRecord(){
       RecordType r = client.getRecord("ivo://ivoa.net/rofr", "ivo_vor");
       assertNotNull(r);
-      Resource res = ((ResourceInstance) r.getMetadata().getAny()).getValue();
+      Resource res = xmlUtils.OaiMetadataToResource(r);
       assertNotNull(res);
       assertEquals("ivo://ivoa.net/rofr", res.getIdentifier());
 
@@ -78,7 +80,7 @@ class OaiPMHClientTest {
       assertTrue(!li.getRecords().isEmpty());
       for (RecordType r : li.getRecords()) { // make sure all the metadata suceeded
          System.out.println(r.getHeader().getIdentifier());
-         Resource res = ((ResourceInstance) r.getMetadata().getAny()).getValue();
+         Resource res = xmlUtils.OaiMetadataToResource(r);;
          assertNotNull(res);
       }
 

@@ -46,6 +46,11 @@ public interface RegistryStoreInterface  {
      */
     void createEntry(String xml, String path); // TODO - add exception - there is no signal if this fails...
 
+   /**
+    * delete the given entry from the store.
+    *  TODO - should this just be physical delete of that id - or the logical one?
+     * @param id
+    */
      void deleteEntry(Ivoid id);
     /**
      * read the content of the given path from the store.

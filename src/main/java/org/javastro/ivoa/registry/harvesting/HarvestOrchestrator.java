@@ -13,7 +13,7 @@ import org.javastro.ivoa.entities.resource.Capability;
 import org.javastro.ivoa.entities.resource.Resource;
 import org.javastro.ivoa.entities.resource.registry.Harvest;
 import org.javastro.ivoa.entities.resource.registry.OAIHTTP;
-import org.javastro.ivoa.entities.resource.registry.iface.VOResources;
+import org.javastro.ivoa.entities.oai.oaipmh.RecordType;
 import org.javastro.ivoa.registry.Registry;
 import org.javastro.ivoa.registry.XMLUtils;
 import org.javastro.ivoa.registry.internal.HarvestSourceCatalog;
@@ -63,7 +63,7 @@ public class HarvestOrchestrator {
     @ConfigProperty(name = "ivoa.harvesting.discovery.enabled", defaultValue = "true")
     boolean discoveryEnabled;
 
-    @ConfigProperty(name = "ivoa.harvesting.discovery.max-sources", defaultValue = "50")
+    @ConfigProperty(name = "ivoa.harvesting.discovery.max-sources", defaultValue = "100")
     int maxSources;
 
     @ConfigProperty(name = "ivoa.harvesting.discovery.max-depth", defaultValue = "3")
@@ -106,16 +106,18 @@ public class HarvestOrchestrator {
             log.warn("Harvest already running – skipping this tick");
             return;
         }
-        log.info("Harvesting started");
+        log.info("Harvesting Run started");
         try {
             String sourceKey = queue.poll();
             if (sourceKey == null) {
+                Comparator<HarvestSource> byLastAttempted = Comparator.comparing(HarvestSource::getLastAttempted,
+                      Comparator.nullsFirst(Comparator.naturalOrder()));
                 // Nothing queued; check for ACTIVE sources or any FAILED ones that have had a recent success
                 catalog.getAll().stream()
                         .filter(s -> s.getStatus() == SourceStatus.ACTIVE ||
                               (s.getStatus() == SourceStatus.FAILED  &&
                                     s.getRecentRuns().stream().limit(5).anyMatch(r -> r.getOutcome().equals("SUCCESS")))
-                               ).forEach(s -> {
+                               ).sorted(byLastAttempted).forEach(s -> {
                           queue.offer(s.getIdentifier());
                       });
             }
@@ -247,8 +249,6 @@ public class HarvestOrchestrator {
         currentSourceKey.set(sourceKey);
         catalog.updateStatus(sourceKey, SourceStatus.RUNNING);
 
-
-
         final Instant harvestStart = Instant.now();
         catalog.updateLastAttempted(sourceKey, harvestStart);
         int stored = 0;
@@ -275,39 +275,49 @@ public class HarvestOrchestrator {
                 details = "OAI-PMH validation failed";
                 catalog.updateStatus(sourceKey, SourceStatus.FAILED);
             } else {
-                List<Resource> records = client.getRecords(source.getLastSuccessful(), null, source.getDiscoverySet());
-                final String path =  makepath(sourceKey);
-                if(!registry.getRegistryStoreInterface().exists(path)) {
-                    VOResources ri = VOResources.builder().addResources(records).build();
-                    registry.getRegistryStoreInterface().create(xmlUtils.marshallResources(ri), path);
-                    stored = records.size();
-                }
-                else {
-                    for (Resource resource : records) {
-                        try {
-                            registry.getRegistryStoreInterface().createEntry(xmlUtils.marshall(resource), path);
-                            stored++;
-                        } catch (Exception e) {
-                            log.errorv("Failed to store resource {0}: {1}",
-                                  resource.getIdentifier(), e.getMessage());
+                client.resetCursor();//should be done on creation, but just in case.
+                do {
+                    int stored_local=0;
+                    List<RecordType> records = client.getRecords(source.getLastSuccessful(), null, source.getDiscoverySet());
+                    final String path = makepath(sourceKey);
+                    if (!registry.getRegistryStoreInterface().exists(path)) {
+                        //TODO would be nice if the store functions actually returned the number of successful stores.
+                        registry.getRegistryStoreInterface().create(xmlUtils.serializeRecords(records), path);
+                        stored_local = records.size();
+                    } else {
+                        registry.getRegistryStoreInterface().createEntry(xmlUtils.serializeRecords(records), path);
+                        stored_local = records.size();
+                    }
+                    log.infov("Source {0}: stored {1} records in this iteration", sourceKey, stored_local);
+                    stored += stored_local;
+                    // Run discovery on the harvested records
+                    if (discoveryEnabled) {
+
+                        List<Resource> resources = new ArrayList<>();
+                        for (RecordType r : records) {
+                            try {
+                                Resource res = xmlUtils.OaiMetadataToResource(r);
+                                resources.add(res);
+                            } catch (Exception e) {
+                                log.errorv("Failed to parse harvested record {0} ready for discovery: {1}",
+                                      r.getHeader().getIdentifier(), e.getMessage());
+                            }
+                        }
+                        List<String> newKeys = discoverNewSources(
+                              resources, sourceKey, source.getDepth(), catalog);
+                        newSources = newKeys.size();
+                        for (String newKey : newKeys) {
+                            enqueue(newKey);
                         }
                     }
-                }
+
+                } while (client.hasMoreRecords());
 
 
                 catalog.updateLastSuccessful(sourceKey, harvestStart);
                 catalog.updateStatus(sourceKey, SourceStatus.ACTIVE);
-                log.infov("Source {0}: stored {1} records", sourceKey, stored);
+                log.infov("Source {0}: stored {1} records in total", sourceKey, stored);
 
-                // Run discovery on the harvested records
-                if (discoveryEnabled) {
-                    List<String> newKeys = discoverNewSources(
-                            records, sourceKey, source.getDepth(), catalog);
-                    newSources = newKeys.size();
-                    for (String newKey : newKeys) {
-                        enqueue(newKey);
-                    }
-                }
 
                 // Update identifier from identify() response if we don't have one yet - TODO this is probably over complex - generated by AI
                 if (source.getIdentifier() == null || source.getIdentifier().isEmpty()) {
@@ -408,7 +418,7 @@ public class HarvestOrchestrator {
                 log.debugv("Per-run discovery cap {0} reached", maxPerRun);
                 break;
             }
-            if (catalog.count() >= maxSources) {
+            if (catalog.count() >= maxSources) { //FIXME - this is probably a bit silly
                 log.infov("Source catalog cap {0} reached – stopping discovery", maxSources);
                 break;
             }

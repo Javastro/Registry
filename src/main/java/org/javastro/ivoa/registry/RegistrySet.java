@@ -5,11 +5,11 @@ package org.javastro.ivoa.registry;
  * Created on 07/07/2025 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
-import org.javastro.ivoa.entities.resource.registry.dublincore.Dc;
-import org.javastro.ivoa.entities.resource.registry.dublincore.simple.ElementType;
-import org.javastro.ivoa.entities.resource.registry.dublincore.simple.ObjectFactory;
-import org.javastro.ivoa.entities.resource.registry.oaipmh.DescriptionType;
-import org.javastro.ivoa.entities.resource.registry.oaipmh.SetType;
+import org.javastro.ivoa.entities.oai.dublincore.Dc;
+import org.javastro.ivoa.entities.oai.dublincore.simple.ElementType;
+import org.javastro.ivoa.entities.oai.dublincore.simple.ObjectFactory;
+import org.javastro.ivoa.entities.oai.oaipmh.DescriptionType;
+import org.javastro.ivoa.entities.oai.oaipmh.SetType;
 import org.javastro.ivoa.schema.Namespaces;
 
 import java.util.List;

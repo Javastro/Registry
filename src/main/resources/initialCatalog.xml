@@ -1,7 +1,10 @@
 <harvestSources>
 <source><identifier>ivo://ivoa.net/rofr</identifier><oaiUrl>http://rofr.ivoa.net/oai</oaiUrl><status>ACTIVE</status></source>
-<source><identifier>ivo://astro.upjs/__system__/services/registry</identifier><oaiUrl>https://skvo.science.upjs.sk/oai.xml</oaiUrl><status>ACTIVE</status></source>
+<source><identifier>ivo://esavo/registry</identifier><oaiUrl>https://registry.euro-vo.org/oai.jsp</oaiUrl><status>ACTIVE</status></source>
+<source><identifier>ivo://org.gavo.dc/__system__/services/registry</identifier><oaiUrl>http://dc.g-vo.org/oai.xml</oaiUrl><status>ACTIVE</status></source>
+<source><identifier>ivo://archive.stsci.edu/nvoregistry</identifier><oaiUrl>http://vao.stsci.edu/directory/oai.aspx?</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://cds.vizier/registry</identifier><oaiUrl>https://cds.unistra.fr/registry/</oaiUrl><status>ACTIVE</status></source>
+<source><identifier>ivo://astro.upjs/__system__/services/registry</identifier><oaiUrl>https://skvo.science.upjs.sk/oai.xml</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://mercator/__system__/services/registry</identifier><oaiUrl>https://mercatorvo.ster.kuleuven.be/oai.xml</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://vopdc/registry</identifier><oaiUrl>http://voparis-registry.obspm.fr/vo/oai</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://lam.cesam/__system__/services/registry</identifier><oaiUrl>https://vo.lam.fr/oai.xml</oaiUrl><status>ACTIVE</status></source>
@@ -13,7 +16,6 @@
 <source><identifier>ivo://www.plate-archive.org/registry</identifier><oaiUrl>https://www.plate-archive.org/oai/</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://aoi.amu.parsec/__system__/services/registry</identifier><oaiUrl>http://parsec-europlanet.eu:81/oai.xml</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://byu.arvo/__system__/services/registry</identifier><oaiUrl>http://arvo-registry.sci.am/oai.xml</oaiUrl><status>ACTIVE</status></source>
-<source><identifier>ivo://esavo/registry</identifier><oaiUrl>https://registry.euro-vo.org/oai.jsp</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://geops.ipsl/__system__/services/registry</identifier><oaiUrl>/oai.xml</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://src.pas/__system__/services/registry</identifier><oaiUrl>http://pithia.cbk.waw.pl/oai.xml</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://helio-vo.eu.mirror/org.astrogrid.registry.registryservice</identifier><oaiUrl>http://voparis-helio.obspm.fr/helio-registry/OAIHandlerv1_0</oaiUrl><status>ACTIVE</status></source>
@@ -25,14 +27,12 @@
 <source><identifier>ivo://fai.kz/__system__/services/registry</identifier><oaiUrl>https://dachs.fai.kz/oai.xml</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://ovgso/__system__/services/registry</identifier><oaiUrl>/oai.xml</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://cxc.harvard.edu/registry</identifier><oaiUrl>http://cdaftp.cfa.harvard.edu/oai</oaiUrl><status>ACTIVE</status></source>
-<source><identifier>ivo://archive.stsci.edu/nvoregistry</identifier><oaiUrl>http://vao.stsci.edu/directory/oai.aspx?</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://gaia.aip.de/registry</identifier><oaiUrl>https://gaia.aip.de/oai/</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://neocc.esa/__system__/services/registry</identifier><oaiUrl>https://dachs.neo.s2p.esa.int/oai.xml</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://musewide.aip.de/registry</identifier><oaiUrl>https://musewide.aip.de/oai/</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://padc.obspm.maser/__system__/services/registry</identifier><oaiUrl>http://voparis-tap-maser.obspm.fr/oai.xml</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://astro.ucl.ac.uk/__system__/services/registry</identifier><oaiUrl>http://astroweb.projects.phys.ucl.ac.uk:8000/oai.xml</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://fu-berlin.planet.hrsc/__system__/services/registry</identifier><oaiUrl>http://dachs.planet.fu-berlin.de/oai.xml</oaiUrl><status>ACTIVE</status></source>
-<source><identifier>ivo://org.gavo.dc/__system__/services/registry</identifier><oaiUrl>http://dc.g-vo.org/oai.xml</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://ksb-orb.dc/__system__/services/registry</identifier><oaiUrl>http://vo-tap.oma.be/oai.xml</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://mssl.ucl.ac.uk/org.astrogrid.registry.registryservice</identifier><oaiUrl>http://msslkk.mssl.ucl.ac.uk/mssl-registry/OAIHandlerv1_0</oaiUrl><status>ACTIVE</status></source>
 <source><identifier>ivo://mssl.ucl.ac.uk/org.astrogrid.registry.registryservice</identifier><oaiUrl>http://msslkk.mssl.ucl.ac.uk/mssl-registry/services/RegistryHarvestv1_0</oaiUrl><status>ACTIVE</status></source>

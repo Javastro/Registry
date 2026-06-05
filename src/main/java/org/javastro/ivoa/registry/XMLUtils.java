@@ -12,16 +12,25 @@ import org.javastro.ivoa.entities.IvoaJAXBContextFactory;
 import org.javastro.ivoa.entities.resource.Resource;
 import org.javastro.ivoa.entities.resource.registry.iface.ResourceInstance;
 import org.javastro.ivoa.entities.resource.registry.iface.VOResources;
-import org.javastro.ivoa.entities.resource.registry.oaipmh.OAIPMH;
+import org.javastro.ivoa.entities.oai.oaipmh.IdentifyType;
+import org.javastro.ivoa.entities.oai.oaipmh.OAIPMH;
+import org.javastro.ivoa.entities.oai.oaipmh.RecordType;
 import org.javastro.ivoa.schema.Namespaces;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
 
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.List;
@@ -30,6 +39,7 @@ import java.util.List;
 public class XMLUtils {
 
    private final static Namespaces ns = Namespaces.RI;
+   private static final Logger log = LoggerFactory.getLogger(XMLUtils.class);
    private final Marshaller marshaller;
    private final Processor processor = new Processor(false);
    private final  XsltExecutable cleaningStylesheet;
@@ -51,10 +61,10 @@ public class XMLUtils {
          dbf.setValidating(false);
          docBuilder = dbf.newDocumentBuilder();
          unmarshaller = context.createUnmarshaller();
-      } catch (JAXBException | SaxonApiException e) {
+
+
+      } catch (ParserConfigurationException |JAXBException | SaxonApiException e) {
          throw new RuntimeException(e); // should not happen in practice
-      } catch (ParserConfigurationException e) {
-         throw new RuntimeException(e);
       }
    }
 
@@ -118,5 +128,64 @@ public class XMLUtils {
          throw new RuntimeException(e);
       }
       return sw.toString();
+   }
+
+   public String serializeRecords(List<RecordType> records) throws IOException, SAXException, TransformerException {
+      Document resourcesDOM = docBuilder.parse(XMLUtils.class.getResourceAsStream("/RegistryBase.xml"));
+      for(RecordType r : records) {
+         if(r.getMetadata()!=null && r.getMetadata().getAny() instanceof Node resourceNode) {
+            Node imported = resourcesDOM.importNode(resourceNode, true);
+            resourcesDOM.getDocumentElement().appendChild(imported);
+         }
+      }
+      StringWriter writer = new StringWriter();
+      Transformer transformer = TransformerFactory.newInstance().newTransformer();
+      transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+      transformer.transform(new DOMSource(resourcesDOM), new StreamResult(writer));
+      return writer.toString();
+   }
+
+   public String serializeRecord(RecordType r) throws TransformerException {
+      if(r.getMetadata()!=null && r.getMetadata().getAny() instanceof Node resourceNode) {
+         StringWriter writer = new StringWriter();
+         Transformer transformer = TransformerFactory.newInstance().newTransformer();
+         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+         transformer.transform(new DOMSource(resourceNode), new StreamResult(writer));
+         return writer.toString();
+      }
+      else{
+         log.warn("record has no metadata or metadata is not a Node, cannot serialize: {}", r.getHeader().getIdentifier());
+         return "";
+      }
+   }
+
+   public Resource OaiMetadataToResource(RecordType oai) {
+
+      return extractResource((Node) oai.getMetadata().getAny());
+
+   }
+
+   public Resource extractResource(Node xml) {
+      try {
+
+         Object o = unmarshaller.unmarshal(xml);
+         if (o instanceof ResourceInstance r) {
+            return r.getValue();
+         }
+         else if (o instanceof Resource r) {
+            return r;
+         }
+         else {
+            throw new RuntimeException("unexpected type in OAI metadata: "+o.getClass());
+         }
+      } catch (JAXBException e) {
+         throw new RuntimeException(e);
+      }
+   }
+
+
+   public Resource OaiIdentifyToResource(IdentifyType oai) {
+
+      return extractResource((Node) oai.getDescriptions().get(0).getAny());
    }
 }
