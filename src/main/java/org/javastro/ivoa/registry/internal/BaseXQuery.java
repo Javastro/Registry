@@ -25,10 +25,8 @@ import org.w3c.dom.Node;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @ApplicationScoped
@@ -36,44 +34,24 @@ public class BaseXQuery   implements RegistryQueryInterface {
 
    private final Logger log = Logger.getLogger(this.getClass());
    private Context contextRO;
-   private static final String namespaces = """
-         declare namespace cs="http://www.ivoa.net/xml/ConeSearch/v1.0";
-         declare namespace dc="http://purl.org/dc/elements/1.1/";
-         declare namespace oai="http://www.openarchives.org/OAI/2.0/";
-         declare namespace ri="http://www.ivoa.net/xml/RegistryInterface/v1.0";
-         declare namespace sia="http://www.ivoa.net/xml/SIA/v1.1";
-         declare namespace slap="http://www.ivoa.net/xml/SLAP/v1.0";
-         declare namespace ssap="http://www.ivoa.net/xml/SSA/v1.1";
-         declare namespace tr="http://www.ivoa.net/xml/TAPRegExt/v1.0";
-         declare namespace vg="http://www.ivoa.net/xml/VORegistry/v1.0";
-         declare namespace vr="http://www.ivoa.net/xml/VOResource/v1.0";
-         declare namespace vs="http://www.ivoa.net/xml/VODataService/v1.1";
-         declare namespace vstd="http://www.ivoa.net/xml/StandardsRegExt/v1.0";
-         """;
-
+   private static final String namespaces;
    private static String listIDsXQuery;
    private static String listRecordsXQuery;
    private static String getRecordXQuery;
 
-   public BaseXQuery(BasexStore store) {
+   static {
       try {
-         InputStream s = getClass().getResourceAsStream("/xquery/oaiIdentifiers.xq");
-         assert s != null;
-         listIDsXQuery = new String(s.readAllBytes());
-         s = getClass().getResourceAsStream("/xquery/oaiListRecords.xq");
-         assert s != null;
-         listRecordsXQuery = new String(s.readAllBytes());
-         s =getClass().getResourceAsStream("/xquery/oaiIdentifiers.xq");
-         assert s != null;
-         s = getClass().getResourceAsStream("/xquery/oaiGetRecord.xq");
-
-         assert s != null;
-         getRecordXQuery = new String(s.readAllBytes());
-         ;
-
+         namespaces = new String(BaseXQuery.class.getResourceAsStream("/xquery/namespaces.xq").readAllBytes());
+         listIDsXQuery = new String(BaseXQuery.class.getResourceAsStream("/xquery/oaiIdentifiers.xq").readAllBytes());
+         listRecordsXQuery = new String(BaseXQuery.class.getResourceAsStream("/xquery/oaiListRecords.xq").readAllBytes());
+         getRecordXQuery = new String(BaseXQuery.class.getResourceAsStream("/xquery/oaiGetRecord.xq").readAllBytes());
       } catch (IOException e) {
-         throw new RuntimeException(e);
+         throw new RuntimeException("Failed to read default queries",e);
       }
+   }
+
+   public BaseXQuery(BasexStore store) {
+
       contextRO = new Context(store.context);
       contextRO.user(contextRO.users.get("reader"));
       try {

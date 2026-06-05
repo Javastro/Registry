@@ -12,4 +12,3 @@ declare namespace vs="http://www.ivoa.net/xml/VODataService/v1.1";
 declare namespace vstd="http://www.ivoa.net/xml/StandardsRegExt/v1.0";
 declare namespace doc="http://www.ivoa.net/xml/DocRegExt/v1";
 
-/*
