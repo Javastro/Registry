@@ -13,7 +13,7 @@ val quarkusPlatformVersion: String by project
 
 dependencies {
     implementation("org.javastro.ivoa:ivoa-entities:0.9.14")
-    implementation("org.basex:basex-api:12.0")
+    implementation("org.basex:basex-api:12.4")
     implementation("org.xmlresolver:xmlresolver:6.0.18")
     implementation("net.sf.saxon:Saxon-HE:12.5") // for xslt 3.0
     implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
