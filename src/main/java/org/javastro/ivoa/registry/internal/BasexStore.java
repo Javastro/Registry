@@ -66,6 +66,8 @@ public class BasexStore  implements RegistryStoreInterface{
             new Grant("read","reader").execute(context);
             new Set(MainOptions.WRITEBACK, true).execute(context);
             new Set(MainOptions.MIXUPDATES, true).execute(context);
+            new Set(MainOptions.AUTOFLUSH, false).execute(context);
+            new Set(MainOptions.UPDINDEX, false).execute(context);
 
 
         } catch (BaseXException e) {

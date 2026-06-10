@@ -6,12 +6,19 @@ declare variable $path as xs:string external;
 
 (: declare context value := fn:collection("Registry/managed/base.xml"); :)
 (: 
-IMPL not sure is this is the most efficient, but it seems to work
+IMPL definitely not efficient takes progressively longer as data base gets bigger FIXME needs to be faster.
+
+Some  testing.
+2000 records - raw save (not using this code) 2s
+2000  added to above, using this code 2m 30s
+
 :)
 
-(:let $_ := admin:write-log('writing to  ' || $path, 'INFO')
-cannot put this here, as it then becomes the expression ....:)
+(:cannot put this here, as it then becomes the expression ....
+let $_ := admin:write-log('writing to  ' || $path, 'INFO')
+:)
 
+(# db:updindex false #) (# db:autooptimize false #) {
 for $r in fn:collection(fn:string-join(("Registry/",$path)))/ri:VOResources
    let $in := fn:parse-xml($rin)//ri:Resource
    let $existingIDs := $r/ri:Resource/identifier[text() = $in//identifier/text()]
@@ -19,12 +26,16 @@ for $r in fn:collection(fn:string-join(("Registry/",$path)))/ri:VOResources
    let $ups := $in[identifier = ($existingIDs) ]
     return       (insert nodes $new into $r, 
     (: now update any existing :)
-  for $u in 
+  (for $u in
       fn:collection(fn:string-join(("Registry/",$path)))/ri:VOResources/ri:Resource[identifier = ($existingIDs)]
       let $upid := $u/identifier
      
-    return replace node $u with $in[identifier=$upid])
-    
+    return (replace node $u with $in[identifier=$upid]),
+    (# db:updindex true #) {
+    db:flush("Registry")
+  }
+  ))
+}    
        
    
    
