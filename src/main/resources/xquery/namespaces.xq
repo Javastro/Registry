@@ -11,4 +11,5 @@ declare namespace vr="http://www.ivoa.net/xml/VOResource/v1.0";
 declare namespace vs="http://www.ivoa.net/xml/VODataService/v1.1";
 declare namespace vstd="http://www.ivoa.net/xml/StandardsRegExt/v1.0";
 declare namespace doc="http://www.ivoa.net/xml/DocRegExt/v1";
-
+(: Declare the context value as whole database - TODO pass this from outside :)
+declare context value := db:get('Registry');

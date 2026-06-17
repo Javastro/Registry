@@ -32,7 +32,7 @@ class HarvestOrchestratorTest {
     HarvestSourceCatalog catalog;
 
     // -------------------------------------------------------------------------
-    // GET /admin/harvest/status – no auth required by test (update role enforced)
+    // GET /harvesting/harvest/status – no auth required by test (update role enforced)
     // -------------------------------------------------------------------------
 
     @Test
@@ -40,7 +40,7 @@ class HarvestOrchestratorTest {
         given()
                 .auth().basic("admin", "passwordchangeme")
                 .when()
-                .get("/admin/harvest/status")
+                .get("/harvesting/harvest/status")
                 .then()
                 .statusCode(200)
                 .contentType(containsString("application/json"))
@@ -51,13 +51,13 @@ class HarvestOrchestratorTest {
     void adminHarvestStatus_returns401WithoutAuth() {
         given()
                 .when()
-                .get("/admin/harvest/status")
+                .get("/harvesting/harvest/status")
                 .then()
                 .statusCode(401);
     }
 
     // -------------------------------------------------------------------------
-    // GET /admin/harvest/sources
+    // GET /harvesting/harvest/sources
     // -------------------------------------------------------------------------
 
     @Test
@@ -65,14 +65,14 @@ class HarvestOrchestratorTest {
         given()
                 .auth().basic("admin", "passwordchangeme")
                 .when()
-                .get("/admin/harvest/sources")
+                .get("/harvesting/harvest/sources")
                 .then()
                 .statusCode(200)
                 .contentType(containsString("application/json"));
     }
 
     // -------------------------------------------------------------------------
-    // GET /admin/harvest/runs
+    // GET /harvesting/harvest/runs
     // -------------------------------------------------------------------------
 
     @Test
@@ -80,7 +80,7 @@ class HarvestOrchestratorTest {
         given()
                 .auth().basic("admin", "passwordchangeme")
                 .when()
-                .get("/admin/harvest/runs")
+                .get("/harvesting/harvest/runs")
                 .then()
                 .statusCode(200)
                 .contentType(containsString("application/json"));
@@ -95,14 +95,14 @@ class HarvestOrchestratorTest {
         given()
                 .auth().basic("admin", "passwordchangeme")
                 .when()
-                .post("/admin/harvest")
+                .post("/harvesting/harvest")
                 .then()
                 .statusCode(202)
                 .body("status", anyOf(is("enqueued"), is("skipped")));
     }
 
     // -------------------------------------------------------------------------
-    // POST /admin/harvest/source/{key}/disable
+    // POST /harvesting/harvest/source/{key}/disable
     // -------------------------------------------------------------------------
 
     @Test
@@ -110,7 +110,7 @@ class HarvestOrchestratorTest {
         given()
                 .auth().basic("admin", "passwordchangeme")
                 .when()
-                .post("/admin/harvest/source/unknown-key-xyz/disable")
+                .post("/harvesting/harvest/source/unknown-key-xyz/disable")
                 .then()
                 .statusCode(404);
     }
