@@ -14,7 +14,11 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 import java.util.concurrent.CompletionStage;
 
-
+/**
+ * An interface for a REST client that interacts with an OAI-PMH (Open Archives Initiative Protocol for Metadata Harvesting) service.
+ * This interface defines methods corresponding to the various OAI-PMH verbs, allowing clients to perform operations such as identifying the repository, listing metadata formats, sets, identifiers, records, and retrieving specific records. The methods return a CompletionStage of String, indicating that the responses are handled asynchronously.
+ *
+ * @author Paul Harrison (paul.harrison@manchester.ac.uk) */
 @RegisterRestClient
 @Produces({MediaType.TEXT_XML,MediaType.APPLICATION_XML, MediaType.WILDCARD})
 public interface OaiPMHClientInterface {

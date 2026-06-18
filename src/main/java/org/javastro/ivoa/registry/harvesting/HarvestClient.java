@@ -5,10 +5,13 @@ package org.javastro.ivoa.registry.harvesting;
  * Created on 03/02/2025 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
+import io.vertx.mutiny.core.Vertx;
+import jakarta.inject.Inject;
 import org.javastro.ivoa.entities.resource.Resource;
 import org.javastro.ivoa.entities.oai.oaipmh.*;
 import org.javastro.ivoa.registry.XMLUtils;
 import org.javastro.ivoa.registry.oaipmh.client.OaiPMHClient;
+import org.javastro.ivoa.registry.oaipmh.client.OaiPMHException;
 import org.jboss.logging.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -31,6 +34,8 @@ public class HarvestClient {
    private static final org.slf4j.Logger log = LoggerFactory.getLogger(HarvestClient.class);
    final OaiPMHClient client;
    private final XMLUtils xmlUtils = new XMLUtils();
+
+
 
    private String resumptionToken = null;
    private int total;
@@ -72,19 +77,25 @@ public class HarvestClient {
     */
    public boolean validate(){
       boolean retval = true;
-      ListMetadataFormatsType mt = client.listMetadataFormats();
+      try {
+         ListMetadataFormatsType mt = client.listMetadataFormats();
 
-      if(mt == null || mt.getMetadataFormats().stream().noneMatch(m -> m.getMetadataPrefix().equals("ivo_vor")))
-      {
-         retval = false;
-         LOG.errorv("the Registry at {0} does not serve metadata format {1}",client.getUrl(), METADATA_PREFIX);
-      }
+         if(mt == null || mt.getMetadataFormats().stream().noneMatch(m -> m.getMetadataPrefix().equals("ivo_vor")))
+         {
+            retval = false;
+            LOG.errorv("the Registry at {0} does not serve metadata format {1}",client.getUri(), METADATA_PREFIX);
+         }
 
-      ListSetsType st = client.listSets();
-      if(st == null || st.getSets().stream().noneMatch(m -> m.getSetSpec().equals(IVO_MANAGED_SET)))
-      {
+         ListSetsType st = client.listSets();
+         if(st == null || st.getSets().stream().noneMatch(m -> m.getSetSpec().equals(IVO_MANAGED_SET)))
+         {
+            retval = false;
+            LOG.errorv("the Registry at {0} does not have a harvestable set {1}",client.getUri(),IVO_MANAGED_SET );
+         }
+      } catch (OaiPMHException e) {
          retval = false;
-         LOG.errorv("the Registry at {0} does not have a harvestable set {1}",client.getUrl(),IVO_MANAGED_SET );
+         LOG.errorv("the Registry at {0} has returned an error {}",client.getUri(), e.getMessage());
+
       }
 
       return retval;
@@ -97,16 +108,24 @@ public class HarvestClient {
     */
    public Resource identify()
    {
-      IdentifyType r = client.identify();
+      try {
+         IdentifyType r = client.identify();
 
-      return xmlUtils.OaiIdentifyToResource(r) ;
+         return xmlUtils.OaiIdentifyToResource(r) ;
+      } catch (OaiPMHException e) {
+         throw new RuntimeException("Error getting registry self identify",e);
+      }
    }
 
 
    public Resource getRecord(String identifier)
    {
-      RecordType r = client.getRecord(identifier, METADATA_PREFIX);
-      return xmlUtils.OaiMetadataToResource(r) ;
+      try {
+         RecordType r = client.getRecord(identifier, METADATA_PREFIX);
+         return xmlUtils.OaiMetadataToResource(r) ;
+      } catch (OaiPMHException e) {
+         throw new RuntimeException("Error getting record",e);
+      }
    }
 
    public List<HeaderType> getIdentifiers(Instant from, Instant until){
@@ -117,10 +136,16 @@ public class HarvestClient {
       List<HeaderType> hh = new ArrayList<>();
 
       do {
-         ListIdentifiersType li = client.listIdentifiers(resumptionToken==null?METADATA_PREFIX:null, set, from, until, resumptionToken);
-         if (li == null) {
-            // OAI error response (e.g. noRecordsMatch) — no identifiers to harvest
-            LOG.infov("listIdentifiers returned no result (OAI error or empty response) for {0}", client.getUrl());
+         ListIdentifiersType li = null;
+         try {
+            li = client.listIdentifiers(resumptionToken==null?METADATA_PREFIX:null, set, from, until, resumptionToken);
+            if (li == null) {
+               // OAI error response (e.g. noRecordsMatch) — no identifiers to harvest
+               LOG.infov("listIdentifiers returned no result (OAI error or empty response) for {0}", client.getUri());
+               break;
+            }
+         } catch (OaiPMHException e) {
+            LOG.errorv("Error from ListIdentiferfs from {0}: {1}", client.getUri(), e.getMessage());
             break;
          }
          hh.addAll(li.getHeaders());
@@ -153,10 +178,16 @@ public class HarvestClient {
    public List<RecordType> getRecords(Instant from, Instant until, String set){
       List<RecordType> sr = new ArrayList<>();
       do {
-         ListRecordsType rec = client.listRecords(METADATA_PREFIX, set, from, until, resumptionToken);
-         if (rec == null || rec.getRecords().isEmpty()) {
-            // OAI error response (e.g. noRecordsMatch) — no records to harvest
-            LOG.infov("listRecords returned no result (OAI error or empty response) for {0}", client.getUrl());
+         ListRecordsType rec = null;
+         try {
+            rec = client.listRecords(METADATA_PREFIX, set, from, until, resumptionToken);
+            if (rec == null || rec.getRecords().isEmpty()) {
+               // OAI error response (e.g. noRecordsMatch) — no records to harvest
+               LOG.infov("listRecords returned no result (OAI error or empty response) for {0}", client.getUri());
+               break;
+            }
+         } catch (OaiPMHException e) {
+            LOG.errorv("Error getting records from {0}: {1}", client.getUri(), e.getMessage());
             break;
          }
          sr.addAll(rec.getRecords());
@@ -175,7 +206,6 @@ public class HarvestClient {
       } while (sr.size() < harvestChunkSize && !(sr.size() == total)); // allow fairly big in memory store to build up
       return sr;
    }
- 
 
 
 }

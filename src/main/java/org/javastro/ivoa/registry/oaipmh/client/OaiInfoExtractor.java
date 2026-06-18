@@ -7,6 +7,7 @@ import net.sf.saxon.s9api.*;
 import javax.xml.transform.stream.StreamSource;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -30,6 +31,15 @@ public final class OaiInfoExtractor {
          throw new IllegalStateException("Missing /xslt/extractResumptionTokenJson.xslt");
       }
       executable = compiler.compile(new StreamSource(xsltStream));
+   }
+
+   public OaiRecordInfo extract(Path oaiListRecordsXmlFilePath) {
+      try {
+         String xmlContent = java.nio.file.Files.readString(oaiListRecordsXmlFilePath);
+         return extract(xmlContent);
+      } catch (Exception e) {
+         throw new RuntimeException("Failed to read or extract token JSON from file: " + oaiListRecordsXmlFilePath, e);
+      }
    }
 
    public OaiRecordInfo extract(String oaiListRecordsXml) {
