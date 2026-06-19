@@ -9,13 +9,14 @@ The development framework that is used to create the application is Quarkus. If 
 ## Running the application in dev mode
 
 You can run your application in dev mode that enables live coding using:
+
 ```shell script
 ./gradlew quarkusDev
 ```
 
 > **_NOTE:_** 
 > * Quarkus ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
-> * there is also a Swagger UI to run all the endpoints http://localhost:8080/q/dev-ui/io.quarkus.quarkus-smallrye-openapi/swagger-ui
+> * there is also a Swagger UI to run all the endpoints http://localhost:8080/q/swagger-ui/
 
 
 ### Adding content
@@ -29,6 +30,15 @@ this can be changed in a deployment by setting the following environment variabl
 ```shell
 QUARKUS_SECURITY_USERS_EMBEDDED_USERS__admin__ = betterpassword
 ```
+
+### Harvesting
+
+to specify a cache directory for the harvesting process, set the following environment variable
+
+```shell
+IVOA_HARVESTING_CACHE=/path/to/cache/directory
+```
+
 
 ## Running in Docker
 

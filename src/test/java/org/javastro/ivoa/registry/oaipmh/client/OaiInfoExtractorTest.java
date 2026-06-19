@@ -40,6 +40,7 @@ class OaiInfoExtractorTest {
         assertEquals("49bba0f9-3445-4b63-894e-3074c57f0a71||100", info.resumptionToken());
         assertEquals(390, info.total());
         assertEquals(0, info.cursor());
+        assertEquals(100, info.nreturned() );
     }
 
     @Test

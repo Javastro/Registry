@@ -58,6 +58,6 @@ public final class OaiInfoExtractor {
       }
    }
 
-   public record OaiRecordInfo(Instant timestamp, String resumptionToken, Integer total, Integer cursor ) {};
+   public record OaiRecordInfo(Instant timestamp, String resumptionToken, Integer total, Integer cursor, Integer nreturned) {};
 
 }

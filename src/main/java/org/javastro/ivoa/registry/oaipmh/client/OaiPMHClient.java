@@ -133,13 +133,15 @@ public class OaiPMHClient {
 
 
     private void processParams(UriBuilder req, String metadataPrefix, String set, Instant from, Instant until, String resumptionToken) throws OaiPMHException {
-        if (from != null) req.queryParam("from", getUtc(from));
-        if (until != null) req.queryParam("until", getUtc(until));
+
         if (resumptionToken != null && !resumptionToken.isBlank())
-            req.queryParam("resumptionToken", resumptionToken.trim()); // IMPL esa reg does not like resumption token set when metadata prefix
-        if (resumptionToken == null || resumptionToken.isBlank())
+            req.queryParam("resumptionToken", resumptionToken.trim());
+        else { //only set these if no resumption token
+            if (from != null) req.queryParam("from", getUtc(from));
+            if (until != null) req.queryParam("until", getUtc(until));
             req.queryParam("metadataPrefix", metadataPrefix.trim()); // IMPL esa reg does not like metadata prefix set when resumption token
-        if (set != null && !set.isBlank()) req.queryParam("set", set.trim());
+            if (set != null && !set.isBlank()) req.queryParam("set", set.trim());
+        }
     }
 
     @Nullable

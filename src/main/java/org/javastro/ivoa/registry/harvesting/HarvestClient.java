@@ -5,6 +5,7 @@ package org.javastro.ivoa.registry.harvesting;
  * Created on 03/02/2025 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
+import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 import jakarta.inject.Inject;
 import org.javastro.ivoa.entities.resource.Resource;
@@ -19,6 +20,7 @@ import org.w3c.dom.Node;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A registry client that will directly return Registry objects.

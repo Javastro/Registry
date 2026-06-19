@@ -35,7 +35,8 @@
           'timestamp': normalize-space(string(/oai:OAI-PMH/oai:responseDate)),
           'resumptionToken': normalize-space(string($rt)),
           'total': $totalVal,
-          'cursor': $cursorVal
+          'cursor': $cursorVal,
+          'nreturned': count(/oai:OAI-PMH/oai:ListRecords/oai:record)
         },
         map{'method':'json'}
       )

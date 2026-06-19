@@ -23,8 +23,6 @@ dependencies {
     implementation("io.quarkus:quarkus-rest-qute")
     implementation("io.quarkus:quarkus-rest-jaxb")
     implementation("io.quarkus:quarkus-rest-jackson")
-    implementation("io.quarkus:quarkus-vertx")
-    implementation("io.smallrye.reactive:smallrye-mutiny-vertx-web-client") // TODO is this already included in quarkus
 
 
     implementation("io.quarkus:quarkus-smallrye-openapi")

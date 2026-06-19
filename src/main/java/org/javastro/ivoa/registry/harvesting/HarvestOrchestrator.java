@@ -5,6 +5,7 @@ package org.javastro.ivoa.registry.harvesting;
  */
 
 import io.quarkus.scheduler.Scheduled;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -17,10 +18,14 @@ import org.javastro.ivoa.entities.oai.oaipmh.RecordType;
 import org.javastro.ivoa.registry.Registry;
 import org.javastro.ivoa.registry.XMLUtils;
 import org.javastro.ivoa.registry.internal.HarvestSourceCatalog;
+import org.javastro.ivoa.registry.oaipmh.client.OaiInfoExtractor;
+import org.javastro.ivoa.registry.oaipmh.client.OaiPMHClient;
 import org.jboss.logging.Logger;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -51,6 +56,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @ApplicationScoped
 public class HarvestOrchestrator {
 
+    private static final int MAX_ITERATIONS = 2000;
     @Inject
     Logger log;
 
@@ -75,6 +81,10 @@ public class HarvestOrchestrator {
     @ConfigProperty(name = "ivoa.harvesting.discovery.doXMLValidation", defaultValue = "true")
     boolean doXMLValidation;
 
+    @ConfigProperty(name = "ivoa.harvesting.cache", defaultValue = "harvestCache")
+    Path cachDir;
+
+
     static final String REGISTRY_STANDARD_ID_PREFIX = "ivo://ivoa.net/std/Registry";
     // -------------------------------------------------------------------------
     // Internal state
@@ -90,6 +100,9 @@ public class HarvestOrchestrator {
     private final AtomicBoolean catalogInitialized = new AtomicBoolean(false);
 
     private final XMLUtils xmlUtils = new XMLUtils();
+
+
+
 
     // -------------------------------------------------------------------------
     // Scheduler entry point
@@ -165,6 +178,59 @@ public class HarvestOrchestrator {
         catalog.updateStatus(sourceKey, SourceStatus.QUEUED);
         queue.offer(sourceKey);
         log.infov("Enqueued source {0}", sourceKey);
+        return true;
+    }
+
+    public boolean cache(String sourceKey) {
+        ensureInitialized();
+
+        Optional<HarvestSource> opt = catalog.get(sourceKey);
+        if (opt.isEmpty()) {
+            log.warnv("cache: unknown source key {0}", sourceKey);
+            return false;
+        }
+        HarvestSource source = opt.get();
+        OaiPMHClient client = new OaiPMHClient(source.getOaiUrl(), doXMLValidation);
+        Path sourceCachePath = cachedir(sourceKey).toAbsolutePath();
+         try {
+               Files.createDirectories(cachDir);
+               if (Files.exists(sourceCachePath)) {
+                   log.infov("Cache directory {0} already exists, deleting existing files to re-populate", sourceCachePath);
+                   try (var paths = Files.list(sourceCachePath)) {
+                       paths
+                             .filter(Files::isRegularFile)
+                             .forEach(f -> {
+                                 try {
+                                     Files.delete(f);
+                                 } catch (Exception e) {
+                                     log.errorv("Failed to delete cached file {0}: {1}", f, e.getMessage());
+                                 }
+                             });
+                   }
+               }
+               else {
+                   Files.createDirectories(sourceCachePath);
+               }
+
+               int iter = 0;
+               int nrunning=0;
+               String resumptionToken = null;
+               do {
+                   Path filename = sourceCachePath.resolve(String.format(Locale.ROOT, "%04d.xml", iter++));
+                   OaiInfoExtractor.OaiRecordInfo result = client.ListRecordsRaw(filename, HarvestClient.METADATA_PREFIX, HarvestClient.IVO_MANAGED_SET, null, null, resumptionToken);
+                   resumptionToken = result.resumptionToken();
+                   nrunning += result.nreturned();
+                   final Integer total = result.total();
+                   log.infov("Cached records for source {0} into {1} {2}/{3}", sourceKey, filename.toString(), nrunning, total != null ?total.toString():"unknown");
+               } while (resumptionToken != null && !resumptionToken.isBlank() && iter < MAX_ITERATIONS);
+
+               catalog.updateStatus(sourceKey, SourceStatus.CACHED);
+         } catch (Exception e) {
+               log.errorv("Caching of source {0} failed: {1}", sourceKey, e.getMessage());
+               return false;
+         }
+
+        
         return true;
     }
 
@@ -360,6 +426,11 @@ public class HarvestOrchestrator {
 
     private String makepath(String sourceKey) {
          return "harvested/"+sourceKey.substring(6).replaceAll("[^a-z0-9]+", "_")+"/rec.xml";
+    }
+
+    private Path cachedir(String sourcekey)
+    {
+        return cachDir.resolve(sourcekey.substring(6).replaceAll("[^a-z0-9]+", "_"));
     }
 
     // -------------------------------------------------------------------------

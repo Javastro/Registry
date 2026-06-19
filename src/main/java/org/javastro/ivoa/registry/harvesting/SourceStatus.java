@@ -20,6 +20,7 @@ public enum SourceStatus {
     REJECTED,
     /** Source has been manually disabled by an operator. */
     DISABLED,
-    /** Source has been capped by a discovery policy limit (depth, catalog size, etc.). */
+   CACHED,
+   /** Source has been capped by a discovery policy limit (depth, catalog size, etc.). */
     LIMITED
 }
