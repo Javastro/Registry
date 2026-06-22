@@ -32,6 +32,8 @@ namespace declarations are missing.
                 exclude-result-prefixes="xsd map"
 >
     <xsl:output omit-xml-declaration="no" indent="yes"/>
+    
+    <xsl:param name="inputDir" select="''"/>
 
     <xsl:mode on-no-match="shallow-copy"/>
 
@@ -76,21 +78,40 @@ namespace declarations are missing.
         <!-- drop any schemaLocations that are not on the top level - TODO probably should parse to make sure that it is not for an "unknown" namespace -->
     </xsl:template>
 
+
+    <!--IMPL might be better to have a named template that is called for the "scan" style processing as then there is no "main" document anyway -->
+    <xsl:template match="/">
+        <xsl:choose>
+            <xsl:when test="normalize-space($inputDir)=''">
+                <xsl:apply-templates select="*"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:message>doing scan</xsl:message>
+                <xsl:variable name="files" select="collection(concat('file://',$inputDir,'?select=*.xml;recurse=no'))"/>
+                   <xsl:element name="VOResources" namespace="http://www.ivoa.net/xml/RegistryInterface/v1.0">
+                    <!-- put in the standard set of namespace -->
+                    <xsl:for-each select="map:keys($std-namespaces)">
+                        <xsl:namespace name="{.}" select="map:get($std-namespaces, .)"/>
+                    </xsl:for-each>
+                   </xsl:element>
+                    <xsl:for-each select="$files">
+                        <xsl:message>processing chunk <xsl:value-of select="concat(position(), ' of ', count($files))"/></xsl:message>
+                        <xsl:apply-templates select="./oai:OAI-PMH/oai:ListRecords/oai:record/oai:metadata/ri:Resource"/>
+                    </xsl:for-each>
+                
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+               
+
     <xsl:template match="/*">
-        <xsl:variable name="vtheElem" select="."/>
         <xsl:element name="{name()}" namespace="{namespace-uri()}">
             <!-- put in the standard set of namespace -->
             <xsl:for-each select="map:keys($std-namespaces)">
                 <xsl:namespace name="{.}" select="map:get($std-namespaces, .)"/>
             </xsl:for-each>
             <!-- allow any other namespaces that are not in the standard set -->
-            <xsl:for-each select="namespace::*">
-                <xsl:variable name="vPrefix" select="name()"/>
-                <xsl:if test= "mf:nsused($vtheElem,current(),$vPrefix)">
-                    <xsl:copy-of select="."/>
-                </xsl:if>
-            </xsl:for-each>
-
+            <xsl:call-template name="addOnlyNecessaryNamespaces"/>
             <xsl:apply-templates select="@*"/>
 
             <xsl:apply-templates select="node()"/>
@@ -98,16 +119,20 @@ namespace declarations are missing.
     </xsl:template>
 
     <xsl:template match="*">
-        <xsl:variable name="vtheElem" select="."/>
         <xsl:element name="{name()}" namespace="{namespace-uri()}">
-            <xsl:for-each select="namespace::*">
-                <xsl:variable name="vPrefix" select="name()"/>
-                <xsl:if test= "mf:nsused($vtheElem,current(),$vPrefix)">
-                    <xsl:copy-of select="."/>
-                </xsl:if>
-            </xsl:for-each>
+            <xsl:call-template name="addOnlyNecessaryNamespaces"/>
             <xsl:apply-templates select="node()|@*"/>
         </xsl:element>
+    </xsl:template>
+    
+    <xsl:template name="addOnlyNecessaryNamespaces" >
+        <xsl:variable name="vtheElem" select="."/>
+        <xsl:for-each select="namespace::*">
+            <xsl:variable name="vPrefix" select="name()"/>
+            <xsl:if test= "mf:nsused($vtheElem,current(),$vPrefix)">
+                <xsl:copy-of select="."/>
+            </xsl:if>
+        </xsl:for-each>
     </xsl:template>
 
     <xsl:template match="node()|@*" priority="-2">
