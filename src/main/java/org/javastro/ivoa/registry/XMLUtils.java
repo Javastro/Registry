@@ -54,7 +54,7 @@ public class XMLUtils {
          marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
          marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
          XsltCompiler compiler = processor.newXsltCompiler();
-         cleaningStylesheet = compiler.compile(new StreamSource(XMLUtils.class.getResourceAsStream("/xslt/normalizeNamespaces.xslt")));
+         cleaningStylesheet = compiler.compile(new StreamSource(XMLUtils.class.getResourceAsStream("/xslt/fixHarvest.xslt")));
          DocumentBuilderFactory dbf = DocumentBuilderFactory
                .newInstance();
          dbf.setNamespaceAware(true);
