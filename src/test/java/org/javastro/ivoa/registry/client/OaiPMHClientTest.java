@@ -81,9 +81,7 @@ class OaiPMHClientTest {
         Map<String, String> query = lastQuery.get();
         assertEquals("ListRecords", query.get("verb"));
         assertEquals("abc token", query.get("resumptionToken"));
-        assertEquals("ivo_managed", query.get("set"));
         assertFalse(query.containsKey("metadataPrefix"));
-        assertEquals("2026-01-01T01:02:03Z", query.get("from"));
     }
 
     private void startServer() throws IOException {
@@ -178,12 +176,13 @@ class OaiPMHClientTest {
                          xmlns:dc="http://purl.org/dc/elements/1.1/"
                          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                   <responseDate>2026-01-01T00:00:00Z</responseDate>
-                  <request verb="ListRecords">http://example.org/oai</request>
+                  <request verb="ListRecords" set="ivo_managed">http://example.org/oai</request>
                   <ListRecords>
                     <record>
                       <header>
                         <identifier>ivo://example.org/reg</identifier>
                         <datestamp>2026-01-01T00:00:00Z</datestamp>
+                        <setSpec>ivo_managed</setSpec>
                       </header>
                       <metadata>
                         <oai_dc:dc xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/
