@@ -1,5 +1,7 @@
 # Registry 
 
+[![Java CI with Gradle](https://github.com/Javastro/Registry/actions/workflows/gradle.yml/badge.svg)](https://github.com/Javastro/Registry/actions/workflows/gradle.yml)
+
 This project is an implementation of an [IVOA publishing registry](https://www.ivoa.net/documents/RegistryInterface/20180723/REC-RegistryInterface-1.1.html). It uses [BaseX](https://docs.basex.org/) a native XML database as the document store.
 
 It supports the [OAI-PMH](http://www.openarchives.org/OAI/openarchivesprotocol.html) interface for harvesting.
