@@ -47,3 +47,16 @@ An image called `javastro/publishing-registry` will be created and run with
 ./gradlew quarkusBuild 
 docker-compose up
 ```
+
+## Helm chart
+```shell
+./gradlew build
+```
+Helm chart will be generated in `build/helm`
+
+## Environment variables
+```shell
+# Only effects helm chart generation
+ENABLE_MONITORING - enable prometheus metrics (true/false), false by default
+```
+

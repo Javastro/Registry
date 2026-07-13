@@ -1,3 +1,6 @@
+import org.yaml.snakeyaml.DumperOptions
+import org.yaml.snakeyaml.Yaml
+
 plugins {
     `java-library`
     id("io.quarkus")
@@ -12,6 +15,7 @@ val quarkusPlatformArtifactId: String by project
 val quarkusPlatformVersion: String by project
 
 dependencies {
+    implementation("io.quarkiverse.helm:quarkus-helm:1.2.3")
     implementation("org.javastro.ivoa:ivoa-entities:0.9.14")
     implementation("org.basex:basex-api:12.4")
     implementation("org.xmlresolver:xmlresolver:6.0.18")
@@ -23,7 +27,6 @@ dependencies {
     implementation("io.quarkus:quarkus-rest-qute")
     implementation("io.quarkus:quarkus-rest-jaxb")
     implementation("io.quarkus:quarkus-rest-jackson")
-
 
     implementation("io.quarkus:quarkus-smallrye-openapi")
     implementation("io.quarkus:quarkus-scheduler")
