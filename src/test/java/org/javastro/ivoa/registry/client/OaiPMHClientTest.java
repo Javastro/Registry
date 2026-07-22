@@ -2,7 +2,6 @@ package org.javastro.ivoa.registry.client;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import io.quarkus.test.junit.QuarkusTest;
 import org.javastro.ivoa.entities.oai.oaipmh.IdentifyType;
 import org.javastro.ivoa.entities.oai.oaipmh.ListMetadataFormatsType;
 import org.javastro.ivoa.entities.oai.oaipmh.ListRecordsType;
