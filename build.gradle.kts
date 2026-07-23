@@ -15,12 +15,12 @@ val quarkusPlatformArtifactId: String by project
 val quarkusPlatformVersion: String by project
 
 dependencies {
+    implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
     implementation("io.quarkiverse.helm:quarkus-helm:1.2.3")
     implementation("org.javastro.ivoa:ivoa-entities:0.9.14")
     implementation("org.basex:basex-api:12.4")
     implementation("org.xmlresolver:xmlresolver:6.0.18")
     implementation("net.sf.saxon:Saxon-HE:12.5") // for xslt 3.0
-    implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
     implementation("io.quarkus:quarkus-rest-client-jackson")
     implementation("io.quarkus:quarkus-rest-client-jaxb")
     implementation("io.quarkus:quarkus-elytron-security-properties-file")
@@ -32,6 +32,15 @@ dependencies {
     implementation("io.quarkus:quarkus-scheduler")
     implementation("io.quarkus:quarkus-arc")
     implementation("io.quarkus:quarkus-smallrye-graphql")
+//TAP
+    implementation("io.quarkus:quarkus-hibernate-orm")
+    implementation("io.quarkus:quarkus-jdbc-postgresql")
+    implementation("org.javastro.ivoa.core.quarkus:quarkus-tap-lib:1.0.0-SNAPSHOT")
+    implementation("org.javastro.ivoa.core:tap:0.1.0-SNAPSHOT") // TODO should make this transitively available via quarkus-tap-lib
+    implementation("org.javastro.ivoa.dm:RegTAPDM:0.3-SNAPSHOT")
+    implementation("org.javastro.ivoa.core:dal:0.1.0-SNAPSHOT")
+
+//END TAP
 
     implementation("io.quarkus:quarkus-kubernetes")
     implementation("io.quarkus:quarkus-micrometer-registry-prometheus")

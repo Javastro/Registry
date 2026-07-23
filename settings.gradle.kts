@@ -17,11 +17,10 @@ dependencyResolutionManagement {
         mavenLocal()
         mavenCentral()
         /*
-        add this repository to pick up the SNAPSHOT version of the IVOA base library - in the future when this
-        will not be necessary when this library is released as a non-SNAPSHOT version.
+        uksrc repo is where most javastro stuff is being published to at the moment
          */
         maven {
-            url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+            url= uri("https://repo.dev.uksrc.org/repository/maven-public/")
         }
         maven {
             url = uri("https://files.basex.org/maven/")
