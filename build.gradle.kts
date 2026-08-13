@@ -1,26 +1,16 @@
-import org.yaml.snakeyaml.DumperOptions
-import org.yaml.snakeyaml.Yaml
-
 plugins {
-    `java-library`
-    id("io.quarkus")
+    id("org.javastro.build.module.quarkus-app")
 }
 
 group = "org.javastro.ivoa.registry"
 version = "0.1-SNAPSHOT"
 
 
-val quarkusPlatformGroupId: String by project
-val quarkusPlatformArtifactId: String by project
-val quarkusPlatformVersion: String by project
-
 dependencies {
-    implementation("io.quarkiverse.helm:quarkus-helm:1.2.3")
     implementation("org.javastro.ivoa:ivoa-entities:0.9.14")
     implementation("org.basex:basex-api:12.4")
     implementation("org.xmlresolver:xmlresolver:6.0.18")
     implementation("net.sf.saxon:Saxon-HE:12.5") // for xslt 3.0
-    implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
     implementation("io.quarkus:quarkus-rest-client-jackson")
     implementation("io.quarkus:quarkus-rest-client-jaxb")
     implementation("io.quarkus:quarkus-elytron-security-properties-file")
@@ -28,15 +18,10 @@ dependencies {
     implementation("io.quarkus:quarkus-rest-jaxb")
     implementation("io.quarkus:quarkus-rest-jackson")
 
-    implementation("io.quarkus:quarkus-smallrye-openapi")
     implementation("io.quarkus:quarkus-scheduler")
     implementation("io.quarkus:quarkus-arc")
     implementation("io.quarkus:quarkus-smallrye-graphql")
-
-    implementation("io.quarkus:quarkus-kubernetes")
-    implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
-    implementation("io.quarkus:quarkus-container-image-docker")
-   // implementation("io.quarkus:quarkus-resteasy-reactive")
+    // implementation("io.quarkus:quarkus-resteasy-reactive")
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.rest-assured:rest-assured")
 }
