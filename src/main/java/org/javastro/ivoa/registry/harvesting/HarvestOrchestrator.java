@@ -5,10 +5,8 @@ package org.javastro.ivoa.registry.harvesting;
  */
 
 import io.quarkus.scheduler.Scheduled;
-import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.javastro.ivoa.entities.resource.AccessURL;
 import org.javastro.ivoa.entities.resource.Capability;
 import org.javastro.ivoa.entities.resource.Resource;
@@ -66,23 +64,9 @@ public class HarvestOrchestrator {
     @Inject
     HarvestSourceCatalog catalog;
 
-    @ConfigProperty(name = "ivoa.harvesting.discovery.enabled", defaultValue = "true")
-    boolean discoveryEnabled;
+    @Inject
+    HarvestingConfig harvestingConfig;
 
-    @ConfigProperty(name = "ivoa.harvesting.discovery.max-sources", defaultValue = "100")
-    int maxSources;
-
-    @ConfigProperty(name = "ivoa.harvesting.discovery.max-depth", defaultValue = "3")
-    int maxDepth;
-
-    @ConfigProperty(name = "ivoa.harvesting.discovery.max-per-run", defaultValue = "5")
-    int maxPerRun;
-
-    @ConfigProperty(name = "ivoa.harvesting.discovery.doXMLValidation", defaultValue = "true")
-    boolean doXMLValidation;
-
-    @ConfigProperty(name = "ivoa.harvesting.cache", defaultValue = "harvestCache")
-    Path cachDir;
 
 
     static final String REGISTRY_STANDARD_ID_PREFIX = "ivo://ivoa.net/std/Registry";
@@ -112,7 +96,7 @@ public class HarvestOrchestrator {
      * Cron-driven queue processor.  Skips if a harvest is already running.
      * Initialises the catalog and enrolls the seed source on first invocation.
      */
-    @Scheduled(cron = "{ivoa.harvesting.cron}")
+    @Scheduled(cron = "{ivoa.registry.harvesting.cron}")
     void processQueue() {
         ensureInitialized();
         if (!running.compareAndSet(false, true)) {
@@ -190,10 +174,10 @@ public class HarvestOrchestrator {
             return false;
         }
         HarvestSource source = opt.get();
-        OaiPMHClient client = new OaiPMHClient(source.getOaiUrl(), doXMLValidation);
+        OaiPMHClient client = new OaiPMHClient(source.getOaiUrl(), harvestingConfig.discovery().doXmlValidation());
         Path sourceCachePath = cachedir(sourceKey).toAbsolutePath();
          try {
-               Files.createDirectories(cachDir);
+               Files.createDirectories(harvestingConfig.cacheDir().toAbsolutePath());
                if (Files.exists(sourceCachePath)) {
                    log.infov("Cache directory {0} already exists, deleting existing files to re-populate", sourceCachePath);
                    try (var paths = Files.list(sourceCachePath)) {
@@ -334,7 +318,7 @@ public class HarvestOrchestrator {
                         ? source.getLastSuccessful() : "beginning");
 
         try {
-            HarvestClient client = new HarvestClient(source.getOaiUrl(), doXMLValidation, 2000);
+            HarvestClient client = new HarvestClient(source.getOaiUrl(), harvestingConfig.discovery().doXmlValidation(), 2000);
             if (!client.validate()) {
                 log.errorv("Source {0} failed OAI-PMH validation", sourceKey);
                 outcome = "FAILED";
@@ -357,7 +341,7 @@ public class HarvestOrchestrator {
                     log.infov("Source {0}: stored {1} records in this iteration", sourceKey, stored_local);
                     stored += stored_local;
                     // Run discovery on the harvested records
-                    if (discoveryEnabled) {
+                    if (harvestingConfig.discovery().enabled()) {
 
                         List<Resource> resources = new ArrayList<>();
                         for (RecordType r : records) {
@@ -430,7 +414,7 @@ public class HarvestOrchestrator {
 
     private Path cachedir(String sourcekey)
     {
-        return cachDir.resolve(sourcekey.substring(6).replaceAll("[^a-z0-9]+", "_"));
+        return harvestingConfig.cacheDir().resolve(sourcekey.substring(6).replaceAll("[^a-z0-9]+", "_"));
     }
 
     // -------------------------------------------------------------------------
@@ -473,24 +457,24 @@ public class HarvestOrchestrator {
                                            HarvestSourceCatalog catalog) {
         List<String> accepted = new ArrayList<>();
 
-        if (!discoveryEnabled) {
+        if (!harvestingConfig.discovery().enabled()) {
             log.debug("Discovery is disabled – skipping");
             return accepted;
         }
 
         int childDepth = parentDepth + 1;
-        if (childDepth > maxDepth) {
-            log.debugv("Max discovery depth {0} reached (parent depth {1})", maxDepth, parentDepth);
+        if (childDepth > harvestingConfig.discovery().maxDepth()) {
+            log.debugv("Max discovery depth {0} reached (parent depth {1})", harvestingConfig.discovery().maxDepth(), parentDepth);
             return accepted;
         }
 
         for (Resource resource : resources) {
-            if (accepted.size() >= maxPerRun) {
-                log.debugv("Per-run discovery cap {0} reached", maxPerRun);
+            if (accepted.size() >= harvestingConfig.discovery().maxPerRun()) {
+                log.debugv("Per-run discovery cap {0} reached", harvestingConfig.discovery().maxPerRun());
                 break;
             }
-            if (catalog.count() >= maxSources) { //FIXME - this is probably a bit silly
-                log.infov("Source catalog cap {0} reached – stopping discovery", maxSources);
+            if (catalog.count() >= harvestingConfig.discovery().maxSources()) { //FIXME - this is probably a bit silly
+                log.infov("Source catalog cap {0} reached – stopping discovery", harvestingConfig.discovery().maxSources());
                 break;
             }
 
@@ -524,7 +508,7 @@ public class HarvestOrchestrator {
             log.infov("Validating candidate registry at {0}", candidateUrl);
             boolean valid;
             try {
-                HarvestClient client = new HarvestClient(candidateUrl, doXMLValidation, 0);
+                HarvestClient client = new HarvestClient(candidateUrl, harvestingConfig.discovery().doXmlValidation(), 0);
                 valid = client.validate();
             } catch (Exception e) {
                 valid = false;

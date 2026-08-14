@@ -17,6 +17,7 @@ import org.javastro.ivoa.entities.resource.registry.Authority;
 import org.javastro.ivoa.entities.IvoaJAXBUtils;
 import org.javastro.ivoa.entities.resource.registry.Harvest;
 import org.javastro.ivoa.entities.resource.registry.OAIHTTP;
+import org.javastro.ivoa.quarkus.config.RegistrationMetadata;
 import org.javastro.ivoa.registry.internal.RegistryQueryInterface;
 import org.javastro.ivoa.registry.internal.RegistryStoreInterface;
 import org.jboss.logging.Logger;
@@ -33,23 +34,13 @@ import java.util.Set;
 @ApplicationScoped
 public class Registry {
 
-    @ConfigProperty(name="ivoa.registry.baseAddress")
+   @Inject RegistryConfig registryConfig;
+
+    @ConfigProperty(name="thisapp.baseAddress")
     URL baseUrl;
 
-    @ConfigProperty(name="ivoa.registry.authority", defaultValue = "authority")
-    String mainAuthority;
-    @ConfigProperty(name="ivoa.dc.organizationName")
-    String organizationName;
-    @ConfigProperty(name="ivoa.dc.contactName")
-    String contactName;
-
-
-    @ConfigProperty(name="ivoa.dc.contactAddress")
-    String contactAddress;
-   @ConfigProperty(name="ivoa.dc.contactEmail")
-   String contactEmail;
-   @ConfigProperty(name="ivoa.dc.contactTelephone")
-   String contactTelephone;
+   @Inject
+   RegistrationMetadata registrationMetadata;
 
     Set<Authority> managedAuthorities;
     org.javastro.ivoa.entities.resource.registry.Registry thisRegistry;
@@ -74,9 +65,9 @@ public class Registry {
        registryStoreInterface.open();
        try {
           authority = IvoaJAXBUtils.unmarshall(Objects.requireNonNull(this.getClass().getResourceAsStream("/AuthorityTemplate.xml")), Authority.class);
-          authority.setIdentifier("ivo://"+mainAuthority);
+          authority.setIdentifier("ivo://"+registryConfig.authority());
           Creator c = authority.getCuration().getCreators().get(0);
-          c.setName(ResourceName.builder().withValue(organizationName).build());
+          c.setName(ResourceName.builder().withValue(registrationMetadata.organisationName()).build());
           setContact(authority);
           registryStoreInterface.createEntry(xmlUtils.marshall(authority));
        } catch (JAXBException | IOException | SAXException e) {
@@ -85,7 +76,7 @@ public class Registry {
 
        try {
           thisRegistry = IvoaJAXBUtils.unmarshall(Objects.requireNonNull(this.getClass().getResourceAsStream("/RegistryTemplate.xml")), org.javastro.ivoa.entities.resource.registry.Registry.class);
-          thisRegistry.setIdentifier("ivo://"+mainAuthority+"/Registry");
+          thisRegistry.setIdentifier("ivo://"+registryConfig.authority()+"/Registry");
           setContact(thisRegistry);
           List<Capability> caps = thisRegistry.getCapabilities();
           caps.clear();
@@ -177,23 +168,19 @@ public class Registry {
    }
 
    public String getContactEmail() {
-      return contactEmail;
-   }
-
-   public String getContactAddress() {
-      return contactAddress;
+      return registrationMetadata.contactEmail();
    }
 
    public String getContactName() {
-      return contactName;
+      return registrationMetadata.contactName();
    }
 
    public String getOrganizationName() {
-      return organizationName;
+      return registrationMetadata.organisationName();
    }
 
    public String getMainAuthority() {
-      return mainAuthority;
+      return registryConfig.authority();
    }
 
    public Set<RegistrySet> getSets() {
@@ -214,12 +201,11 @@ public class Registry {
    private void setContact(Resource res) {
       Curation cur = res.getCuration();
       Contact contact = cur.getContacts().get(0);
-      contact.setAddress(contactAddress);
-      contact.setEmail(contactEmail);
-      contact.setTelephone(contactTelephone);
+      contact.setEmail(registrationMetadata.contactEmail());
+      contact.setTelephone(registrationMetadata.contactTelephone());
 
       ResourceName name = new ResourceName();
-      name.setValue(contactName);
+      name.setValue(registrationMetadata.contactName());
       contact.setName(name);
    }
 }

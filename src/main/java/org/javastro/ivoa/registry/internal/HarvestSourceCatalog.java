@@ -12,10 +12,7 @@ import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
 import org.basex.core.BaseXException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.javastro.ivoa.registry.harvesting.HarvestRunRecord;
-import org.javastro.ivoa.registry.harvesting.HarvestSource;
-import org.javastro.ivoa.registry.harvesting.HarvestSourceList;
-import org.javastro.ivoa.registry.harvesting.SourceStatus;
+import org.javastro.ivoa.registry.harvesting.*;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
@@ -40,14 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @ApplicationScoped
 public class HarvestSourceCatalog  {
 
-    @ConfigProperty(name = "ivoa.harvesting.rofr.url", defaultValue = "http://rofr.ivoa.net/oai")
-    String rofrUrl;
-
-    @ConfigProperty(name = "ivoa.harvesting.rofr.ivoid", defaultValue = "ivo://ivoa.net/rofr")
-    String rofrIvoid;
-
-    @ConfigProperty(name = "ivoa.harvesting.rofr.uselocal", defaultValue = "false")
-    boolean rofrLocal;
+    @Inject
+    HarvestingConfig harvestingConfig;
 
     private static final Logger LOG = Logger.getLogger(HarvestSourceCatalog.class);
 
@@ -87,7 +78,7 @@ public class HarvestSourceCatalog  {
             if (!store.exists(CATALOG_PATH)) {
                 LOG.infov("No existing source catalog found at {0}", CATALOG_PATH);
 
-                if (rofrLocal) {
+                if (harvestingConfig.rofrUseLocal()) {
                     LOG.infov("creating initial sources from local catalog");
                     String content = new String(
                           getClass().getClassLoader()
@@ -99,8 +90,8 @@ public class HarvestSourceCatalog  {
 
                 }
                 else {
-                    LOG.infov("Creating initial source catalog with RofR entry {0} ({1})", rofrIvoid, rofrUrl);
-                    final HarvestSource e1 = HarvestSource.create(rofrIvoid, rofrUrl, null, 0);
+                    LOG.infov("Creating initial source catalog with RofR entry {0} ({1})", harvestingConfig.rofrIvoid(), harvestingConfig.rofrUrl());
+                    final HarvestSource e1 = HarvestSource.create(harvestingConfig.rofrIvoid(), harvestingConfig.rofrUrl(), null, 0);
                     //e1.setDiscoverySet("ivo_publishers");//TODO restore when https://github.com/ivoa/registry-housekeeping/issues/10 fixed
                     store.create(serializeToXml(List.of(e1)), CATALOG_PATH);
                 }

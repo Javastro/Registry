@@ -4,9 +4,12 @@ package org.javastro.ivoa.registry.harvesting;
  * Created on 28/04/2026 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
+import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.javastro.ivoa.registry.internal.HarvestSourceCatalog;
+import org.javastro.ivoa.registry.internal.RegistryStoreInterface;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -24,6 +27,12 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @QuarkusTest
 class HarvestOrchestratorTest {
+
+    @BeforeAll
+    static void init(){
+       RegistryStoreInterface store = new MockRegistryStore();
+       QuarkusMock.installMockForType(store, RegistryStoreInterface.class);
+    }
 
     @Inject
     HarvestOrchestrator orchestrator;
@@ -151,28 +160,27 @@ class HarvestOrchestratorTest {
 
     @Test
     void catalogUpsert_idempotentForSameKey() {
-        HarvestSourceCatalog inMem = new HarvestSourceCatalog(new MockRegistryStore());
-        HarvestSource s1 = HarvestSource.create( "ivo://example.org/r1",
+        HarvestSource s1 = HarvestSource.create( "ivo://example.org/itempotent",
                 "https://example.org/oai", null, 0);
-        inMem.upsert(s1);
-        inMem.upsert(s1); // second upsert with same key
+        int expected = catalog.count() + 1;
+        catalog.upsert(s1);
+        catalog.upsert(s1); // second upsert with same key
 
-        assertEquals(1, inMem.count(), "Upsert must be idempotent for the same source key");
+        assertEquals(expected, catalog.count(), "Upsert must be idempotent for the same source key");
     }
 
     @Test
     void catalogUpsert_preservesProvenance() {
-        HarvestSourceCatalog inMem = new HarvestSourceCatalog(new MockRegistryStore());
         HarvestSource original = HarvestSource.create(
                 "ivo://example.org/r2", "https://example.org/oai", "seedKey", 1);
-        inMem.upsert(original);
+        catalog.upsert(original);
 
         // Re-upsert with different discoveredFromSourceKey
         HarvestSource updated = HarvestSource.create(
                 "ivo://example.org/r2", "https://example.org/oai", "otherParent", 99);
-        inMem.upsert(updated);
+        catalog.upsert(updated);
 
-        HarvestSource stored = inMem.get("ivo://example.org/r2").orElseThrow();
+        HarvestSource stored = catalog.get("ivo://example.org/r2").orElseThrow();
         assertEquals("seedKey", stored.getDiscoveredFromSourceKey(),
                 "Provenance (discoveredFromSourceKey) must be preserved on re-upsert");
         assertEquals(1, stored.getDepth(), "Depth must be preserved on re-upsert");
@@ -180,11 +188,10 @@ class HarvestOrchestratorTest {
 
     @Test
     void catalogUpdateStatus_persistsChange() {
-        HarvestSourceCatalog inMem = new HarvestSourceCatalog(new MockRegistryStore());
-        inMem.upsert(HarvestSource.create("k-status", "", "https://s.example.org/oai", 0));
-        inMem.updateStatus("k-status", SourceStatus.FAILED);
+        catalog.upsert(HarvestSource.create("k-status", "", "https://s.example.org/oai", 0));
+        catalog.updateStatus("k-status", SourceStatus.FAILED);
 
-        assertEquals(SourceStatus.FAILED, inMem.get("k-status").orElseThrow().getStatus());
+        assertEquals(SourceStatus.FAILED, catalog.get("k-status").orElseThrow().getStatus());
     }
 
     @Test

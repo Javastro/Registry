@@ -1,11 +1,13 @@
 package org.javastro.ivoa.registry.harvesting;
 
 
+import jakarta.enterprise.context.ApplicationScoped;
 import org.javastro.ivoa.entities.Ivoid;
 import org.javastro.ivoa.registry.internal.RegistryStoreInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ApplicationScoped
 public class MockRegistryStore implements RegistryStoreInterface {
 
     private static final Logger log = LoggerFactory.getLogger(MockRegistryStore.class);

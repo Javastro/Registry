@@ -3,6 +3,7 @@ package org.javastro.ivoa.registry.internal;
  * Created on 30/05/2023 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
+import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.basex.core.BaseXException;
 import org.basex.core.Context;
@@ -24,6 +25,7 @@ import java.util.Objects;
  A registry store implemented with <a href="https://basex.org">...</a> .
  */
 @ApplicationScoped
+@DefaultBean //TODO this annotation is here so that tests can supply a mock - that seems the wrong way round
 public class BasexStore  implements RegistryStoreInterface{
 
 

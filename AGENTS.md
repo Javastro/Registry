@@ -152,7 +152,7 @@ docker-compose up
 
 8. **Persistent Per-Source State:** Harvest cursors/status/history are persisted in `harvest/sources.xml` via `HarvestSourceCatalog`; statuses include `ACTIVE`, `QUEUED`, `RUNNING`, `FAILED`, `DISABLED`, `REJECTED`.
 
-9. **Recursive Discovery Controls:** Discovered registries are bounded by `ivoa.harvesting.discovery.*` (`enabled`, `max-sources`, `max-depth`, `max-per-run`, `doXMLValidation`) before being accepted/enqueued.
+9. **Recursive Discovery Controls:** Discovered registries are bounded by `ivoa.harvesting.discovery.*` (`enabled`, `max-sources`, `max-depth`, `max-per-run`, `doXmlValidation`) before being accepted/enqueued.
 
 ## External Dependencies to Know
 
