@@ -25,7 +25,6 @@ import java.util.Objects;
  A registry store implemented with <a href="https://basex.org">...</a> .
  */
 @ApplicationScoped
-@DefaultBean //TODO this annotation is here so that tests can supply a mock - that seems the wrong way round
 public class BasexStore  implements RegistryStoreInterface{
 
 

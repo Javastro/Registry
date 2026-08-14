@@ -4,12 +4,11 @@ package org.javastro.ivoa.registry.harvesting;
  * Created on 28/04/2026 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
-import io.quarkus.test.junit.QuarkusMock;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.javastro.ivoa.registry.internal.HarvestSourceCatalog;
 import org.javastro.ivoa.registry.internal.RegistryStoreInterface;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -28,11 +27,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @QuarkusTest
 class HarvestOrchestratorTest {
 
-    @BeforeAll
-    static void init(){
-       RegistryStoreInterface store = new MockRegistryStore();
-       QuarkusMock.installMockForType(store, RegistryStoreInterface.class);
-    }
+    @InjectMock
+    RegistryStoreInterface store;
 
     @Inject
     HarvestOrchestrator orchestrator;
