@@ -4,8 +4,10 @@ package org.javastro.ivoa.registry.harvesting;
  * Created on 28/04/2026 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import org.javastro.ivoa.entities.resource.AccessURL;
 import org.javastro.ivoa.entities.resource.Capability;
@@ -87,6 +89,9 @@ public class HarvestOrchestrator {
 
 
 
+    void onStart(@Observes StartupEvent ev) {
+        log.info("HarvestOrchestrator starting up - harvest schedule is " + harvestingConfig.cron());
+    }
 
     // -------------------------------------------------------------------------
     // Scheduler entry point
