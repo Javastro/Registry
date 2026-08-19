@@ -1,0 +1,17 @@
+# FIXME note that this is just here as an example for now - it will be replaced by an real registry initilization job in future
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ajob
+spec:
+  template:
+    spec:
+      containers:
+        - name: ajob
+          image: python:latest
+          command: [ "python", "-c" ]
+          args: [ "print('Hello from the Kubernetes job')" ]
+      restartPolicy: Never
+  backoffLimit: 4
+  

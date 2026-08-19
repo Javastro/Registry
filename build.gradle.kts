@@ -27,7 +27,7 @@ dependencies {
     testImplementation("io.quarkus:quarkus-junit5-mockito")
     testImplementation("io.rest-assured:rest-assured")
 
-  //  implementation("io.quarkus:quarkus-kubernetes-config")
+    implementation("io.quarkus:quarkus-kubernetes-config")
 }
 
 
