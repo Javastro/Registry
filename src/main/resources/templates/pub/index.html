@@ -1,0 +1,30 @@
+
+{@org.javastro.ivoa.registry.RegistryConfig registryConfig}
+{@org.javastro.ivoa.quarkus.config.RegistrationMetadata meta}
+{@org.javastro.ivoa.registry.harvesting.HarvestingConfig harvesting}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IVOA Registry</title>
+</head>
+<body>
+<h1>IVOA Registry</h1>
+
+<p> <a href="/q/swagger-ui/">OpenAPI UI:</a></p>
+<p> <a href="/q/graphql-ui/">GraphQL UI:</a></p>
+
+<h2>Registry configuration</h2>
+<dl>
+    <dt>Base address</dt>
+    <dd>{baseURL}</dd>
+    <dt>Authority</dt>
+    <dd>{meta.authority()}</dd>
+    <dt>Harvesting cron</dt>
+    <dd>{harvesting.cron()}</dd>
+    <dt>RofR source</dt>
+    <dd>{harvesting.rofrUrl()}</dd>
+</dl>
+
+</body>
+</html>

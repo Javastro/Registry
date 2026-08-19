@@ -15,6 +15,7 @@ dependencies {
     implementation("io.quarkus:quarkus-rest-client-jaxb")
     implementation("io.quarkus:quarkus-elytron-security-properties-file")
     implementation("io.quarkus:quarkus-rest-qute")
+    implementation("io.quarkiverse.qute.web:quarkus-qute-web:3.4.5")
     implementation("io.quarkus:quarkus-rest-jaxb")
     implementation("io.quarkus:quarkus-rest-jackson")
 
@@ -25,6 +26,8 @@ dependencies {
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.quarkus:quarkus-junit5-mockito")
     testImplementation("io.rest-assured:rest-assured")
+
+  //  implementation("io.quarkus:quarkus-kubernetes-config")
 }
 
 
