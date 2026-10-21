@@ -3,6 +3,7 @@ package org.javastro.ivoa.registry.internal;
  * Created on 30/05/2023 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
+import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.basex.core.BaseXException;
 import org.basex.core.Context;

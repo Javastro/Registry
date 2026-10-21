@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: registry-configmap
+data:
+  # kv format
+  ivoa.registry.harvesting.cron: "0 0 2 * * ?"
+
+
+

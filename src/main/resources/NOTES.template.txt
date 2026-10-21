@@ -1,0 +1,4 @@
+{{ .Chart.Name }} has been installed
+
+It is an IVOA registry implementation that can be used to register and discover IVOA resources.
+
