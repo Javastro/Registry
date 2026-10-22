@@ -51,6 +51,9 @@ public class TapConfiguration {
    @ConfigProperty(name="ivoa.tap.dbCaseSensitive", defaultValue = "false")
    boolean isDbCaseSensitive;
 
+   @ConfigProperty(name="ivoa.tap.useTapTypesInVOSI", defaultValue = "true")
+   boolean useTapTypesInVOSI;
+
    @ConfigProperty(name="ivoa.baseAddress", defaultValue = "http://localhost:8080/")
    URI baseURI;
 
@@ -67,17 +70,13 @@ public class TapConfiguration {
    }
 
    @Produces
-   @Singleton
    VOSIProvider vosi() {
       return new VOSIProvider() {
          @Override
          public Capabilities getCapabilities() {
-            URL url = null;
             try {
-               url = new URL(baseURI.toURL(), "VOSI");//IMPL - this needs to be the same as the root in {@see org.javastro.ivoa.tap.VOSIResource }
-               // standard VOSI ones
-               final List<Capability> capabilities = CapabilityBuilder.createVOSICapabilities(url);
-               capabilities.addAll(CapabilityBuilder.createTAPCapabilities(baseURI.toURL()));
+               // TAP Capabilities
+               final List<Capability> capabilities = CapabilityBuilder.createTAPCapabilities(baseURI.toURL());
 
                return Capabilities.builder().addCapabilities(capabilities).build();
             } catch (MalformedURLException e) {
@@ -90,7 +89,7 @@ public class TapConfiguration {
    @Produces
    @Singleton
    SchemaProvider schema(){
-      return new VODMLSchemaProvider(tapSchemaResource, isDbCaseSensitive);
+      return new VODMLSchemaProvider(tapSchemaResource, isDbCaseSensitive, useTapTypesInVOSI);
    }
 
    @Produces
