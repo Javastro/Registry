@@ -28,7 +28,7 @@ dependencies {
     implementation("io.quarkus:quarkus-jdbc-postgresql")
     implementation("org.javastro.ivoa.core.quarkus:quarkus-tap-lib:0.9.0")
     implementation("org.javastro.ivoa.core:tap:0.9.2") // TODO should make this transitively available via quarkus-tap-lib
-    implementation("org.javastro.ivoa.dm:RegTAPDM:0.4-SNAPSHOT")
+    implementation("org.javastro.ivoa.dm:RegTAPDM:0.9")
     implementation("org.javastro.ivoa.core:dal:0.9.1")
 
 //END TAP
