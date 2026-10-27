@@ -10,6 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.core.UriBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.javastro.ivoa.entities.resource.Capability;
 import org.javastro.ivoa.entities.vosi.capabilities.Capabilities;
@@ -64,7 +65,7 @@ public class TapConfiguration {
       return new ServiceLocator() {
          @Override
          public URI serviceURI() {
-            return baseURI;
+            return UriBuilder.fromUri(baseURI).path("tap/").build();
          }
       };
    }
@@ -73,7 +74,7 @@ public class TapConfiguration {
    public Capabilities getCapabilities() {
       try {
          // TAP Capabilities
-         final List<Capability> capabilities = CapabilityBuilder.createTAPCapabilities(baseURI.toURL());
+         final List<Capability> capabilities = CapabilityBuilder.createTAPCapabilities(UriBuilder.fromUri(baseURI).path("tap/").build().toURL());
 
          return Capabilities.builder().addCapabilities(capabilities).build();
       } catch (MalformedURLException e) {
