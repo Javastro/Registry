@@ -5,6 +5,7 @@ package org.javastro.ivoa.registry.query;
  * Created on 19/08/2025 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
+import io.quarkus.arc.All;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -22,10 +23,18 @@ import java.util.List;
 public class VOSIResource {
    @Inject
    Registry registry;
+
+   @Inject
+   @All
+   List<Capabilities> capabilities;
+
    @GET
    @Path("capabilities")
    @Produces(MediaType.APPLICATION_XML)
    public Capabilities getCapabilities() {
-      return new Capabilities(registry.getSelfAsResource().getCapabilities());
+      Capabilities ret = new Capabilities(registry.getSelfAsResource().getCapabilities());
+      if(capabilities == null) return ret;
+      capabilities.forEach(c -> ret.getCapabilities().addAll(c.getCapabilities()));
+      return ret;
    }
 }

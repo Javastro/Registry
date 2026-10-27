@@ -70,20 +70,15 @@ public class TapConfiguration {
    }
 
    @Produces
-   VOSIProvider vosi() {
-      return new VOSIProvider() {
-         @Override
-         public Capabilities getCapabilities() {
-            try {
-               // TAP Capabilities
-               final List<Capability> capabilities = CapabilityBuilder.createTAPCapabilities(baseURI.toURL());
+   public Capabilities getCapabilities() {
+      try {
+         // TAP Capabilities
+         final List<Capability> capabilities = CapabilityBuilder.createTAPCapabilities(baseURI.toURL());
 
-               return Capabilities.builder().addCapabilities(capabilities).build();
-            } catch (MalformedURLException e) {
-               throw new RuntimeException("base URL is malformed", e);
-            }
-         }
-      };
+         return Capabilities.builder().addCapabilities(capabilities).build();
+      } catch (MalformedURLException e) {
+         throw new RuntimeException("base URL is malformed", e);
+      }
    }
 
    @Produces
