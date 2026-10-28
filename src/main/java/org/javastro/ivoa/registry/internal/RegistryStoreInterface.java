@@ -24,6 +24,13 @@ public interface RegistryStoreInterface  {
      */
    void create(String content, String path);
 
+    /**
+     * save the content of a file into the store (replacing any existing document at the path).
+     * @param file the file to be stored.
+     * @param path the path within the store, including the filename.
+     */
+    void createFromFile(java.nio.file.Path file, String path);
+
 
     /**
      * creates/updates the given registry entry in the registry store.

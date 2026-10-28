@@ -111,6 +111,16 @@ public class BasexStore  implements RegistryStoreInterface{
 
 
    @Override
+   public void createFromFile(java.nio.file.Path file, String path) {
+      try {
+         //IMPL Put will treat the file path as a string and read the file content
+         new Put(path, file.toAbsolutePath().toString()).execute(context);
+      } catch (BaseXException e) {
+         throw new RuntimeException(e);
+      }
+   }
+
+   @Override
    public void createEntry(String xml, String path) {
       try( QueryProcessor proc = new QueryProcessor(updateQuery, context))
       {
