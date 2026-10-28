@@ -150,8 +150,12 @@ public class RegTapLoader {
 
          log.info("loading RofR");
          String xml = q.xquery("db:get('Registry','harvested/ivoa_net_rofr/rec.xml')/*");
-         RegTAPModel model = convert(xml);
-         QuarkusTransaction.requiringNew().call(() -> update(model));
+         if(xml.isEmpty()) {
+            log.warn("RofR document not found in registry store");
+         } else {
+            RegTAPModel model = convert(xml);
+            QuarkusTransaction.requiringNew().call(() -> update(model));
+         }
          finish(State.COMPLETED, null);
          log.info("loaded {} resources into RegTAP", loaded);
       } catch (Throwable t) {
