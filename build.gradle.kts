@@ -5,6 +5,12 @@ plugins {
 group = "org.javastro.ivoa.registry"
 version = "0.2-SNAPSHOT"
 
+repositories {
+    mavenCentral()
+    maven("https://repo.dev.uksrc.org/repository/maven-public/")
+    maven("https://files.basex.org/maven/")
+
+}
 
 dependencies {
  //   implementation("io.quarkiverse.helm:quarkus-helm:1.2.3")
