@@ -3,11 +3,18 @@ plugins {
 }
 
 group = "org.javastro.ivoa.registry"
-version = "0.1-SNAPSHOT"
+version = "0.2-SNAPSHOT"
 
+repositories {
+    mavenCentral()
+    maven("https://repo.dev.uksrc.org/repository/maven-public/")
+    maven("https://files.basex.org/maven/")
+
+}
 
 dependencies {
-    implementation("org.javastro.ivoa:ivoa-entities:0.9.14")
+ //   implementation("io.quarkiverse.helm:quarkus-helm:1.2.3")
+    implementation("org.javastro.ivoa:ivoa-entities:0.9.15")
     implementation("org.basex:basex-api:12.4")
     implementation("org.xmlresolver:xmlresolver:6.0.18")
     implementation("net.sf.saxon:Saxon-HE:12.5") // for xslt 3.0
@@ -22,6 +29,19 @@ dependencies {
     implementation("io.quarkus:quarkus-scheduler")
     implementation("io.quarkus:quarkus-arc")
     implementation("io.quarkus:quarkus-smallrye-graphql")
+//TAP
+    implementation("io.quarkus:quarkus-hibernate-orm")
+    implementation("io.quarkus:quarkus-jdbc-postgresql")
+    implementation("org.javastro.ivoa.core.quarkus:quarkus-tap-lib:0.9.0")
+    implementation("org.javastro.ivoa.core:tap:0.9.2") // TODO should make this transitively available via quarkus-tap-lib
+    implementation("org.javastro.ivoa.dm:RegTAPDM:0.9")
+    implementation("org.javastro.ivoa.core:dal:0.9.1")
+
+//END TAP
+
+ //   implementation("io.quarkus:quarkus-kubernetes")
+    implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
+    implementation("io.quarkus:quarkus-container-image-docker")
     // implementation("io.quarkus:quarkus-resteasy-reactive")
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.quarkus:quarkus-junit5-mockito")
