@@ -29,7 +29,7 @@ public class DirectStoreTest {
       InputStream sin = BasexStore.class.getResourceAsStream("/VOResource.xml");
       assertNotNull(sin);
       String xml = new String(sin.readAllBytes());
-      store.createEntry(xml);
+      store.updateEntries(xml);
       result = query.oaiListIDs(null, ZonedDateTime.now(),"ivo_managed","ivo_vor");
       assertNotNull(result);
       result = query.oaiListRecords(null, ZonedDateTime.now(),"ivo_managed","ivo_vor");

@@ -170,6 +170,31 @@ public class HarvestOrchestrator {
         return true;
     }
 
+    private boolean initFromCache(String sourceKey) {
+        Optional<HarvestSource> opt = catalog.get(sourceKey);
+        if (opt.isEmpty()) {
+            log.warnv("initFromCache: unknown source key {0}", sourceKey);
+            return false;
+        }
+        HarvestSource s = opt.get();
+        if (s.getStatus() == SourceStatus.CACHED) {
+            log.debugv("initFromCache: {0} already CACHED", sourceKey);
+            return false;
+        }
+        if (s.getStatus() == SourceStatus.DISABLED || s.getStatus() == SourceStatus.REJECTED) {
+            log.debugv("initFromCache: {0} is {1} – skipping", sourceKey, s.getStatus());
+            return false;
+        }
+        Path sourceCachePath = cachedir(sourceKey).toAbsolutePath();
+        if (Files.exists(sourceCachePath)) {
+
+            catalog.updateStatus(sourceKey, SourceStatus.CACHED);
+            log.infov("Initialized source {0} from cache", sourceKey);
+            return true;
+        }
+        return false;
+    }
+
     public boolean cache(String sourceKey) {
         ensureInitialized();
 
@@ -221,6 +246,44 @@ public class HarvestOrchestrator {
 
         
         return true;
+    }
+
+    /**
+     * Load the cached chunk files of a source into the registry store as a single
+     * document at {@code harvested/<source-key>/rec.xml}, replacing any existing one.
+     *
+     * @param sourceKey the source key
+     * @return true if the content was loaded
+     */
+    public boolean loadFromCache(String sourceKey) {
+        ensureInitialized();
+        if (catalog.get(sourceKey).isEmpty()) {
+            log.warnv("loadFromCache: unknown source key {0}", sourceKey);
+            return false;
+        }
+        Path dir = cachedir(sourceKey);
+        if (!Files.isDirectory(dir)) {
+            log.warnv("loadFromCache: no cache directory {0}", dir);
+            return false;
+        }
+        Path tmp = null;
+        try {
+            tmp = xmlUtils.concatenateCache(dir);
+            registry.getRegistryStoreInterface().createFromFile(tmp, makepath(sourceKey));
+            log.infov("Loaded cache of source {0} into {1}", sourceKey, makepath(sourceKey));
+            return true;
+        } catch (Exception e) {
+            log.errorv("loadFromCache of source {0} failed: {1}", sourceKey, e.getMessage());
+            return false;
+        } finally {
+            if (tmp != null) {
+                try {
+                    Files.deleteIfExists(tmp);
+                } catch (Exception e) {
+                    log.warnv("Could not delete temp file {0}", tmp);
+                }
+            }
+        }
     }
 
     /**
@@ -340,11 +403,14 @@ public class HarvestOrchestrator {
                         registry.getRegistryStoreInterface().create(xmlUtils.serializeRecords(records), path);
                         stored_local = records.size();
                     } else {
-                        registry.getRegistryStoreInterface().createEntry(xmlUtils.serializeRecords(records), path);
+                        registry.getRegistryStoreInterface().updateEntries(xmlUtils.serializeRecords(records), path);
                         stored_local = records.size();
                     }
                     log.infov("Source {0}: stored {1} records in this iteration", sourceKey, stored_local);
                     stored += stored_local;
+
+                    //FIXME - need to delete any deleted records
+
                     // Run discovery on the harvested records
                     if (harvestingConfig.discovery().enabled()) {
 
@@ -414,7 +480,11 @@ public class HarvestOrchestrator {
     }
 
     private String makepath(String sourceKey) {
-         return "harvested/"+sourceKey.substring(6).replaceAll("[^a-z0-9]+", "_")+"/rec.xml";
+         return makepath(sourceKey, "rec.xml");
+    }
+
+    private String makepath(String sourceKey, String filename) {
+        return "harvested/"+sourceKey.substring(6).replaceAll("[^a-z0-9]+", "_")+"/"+filename;
     }
 
     private Path cachedir(String sourcekey)
@@ -438,6 +508,10 @@ public class HarvestOrchestrator {
                             s.setStatus(SourceStatus.ACTIVE);
                             catalog.upsert(s);
                             queue.offer(s.getIdentifier());
+                        });
+                catalog.getAll()
+                        .forEach(s -> {
+                            initFromCache(s.getIdentifier());
                         });
             } catch (Exception e) {
                 catalogInitialized.set(false); // allow retry

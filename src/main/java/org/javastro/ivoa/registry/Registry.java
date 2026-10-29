@@ -69,9 +69,9 @@ public class Registry {
           Creator c = authority.getCuration().getCreators().get(0);
           c.setName(ResourceName.builder().withValue(registrationMetadata.organisationName()).build());
           setContact(authority);
-          registryStoreInterface.createEntry(xmlUtils.marshall(authority));
+          registryStoreInterface.updateEntries(xmlUtils.marshall(authority));
        } catch (JAXBException | IOException | SAXException e) {
-          throw new RuntimeException("cannot createEntry authority",e); //IMPL this is probably terminal at this stage.
+          throw new RuntimeException("cannot updateEntries authority",e); //IMPL this is probably terminal at this stage.
        }
 
        try {
@@ -141,9 +141,9 @@ public class Registry {
           auths.addAll(managedAuthorities.stream().map(Resource::getIdentifier).toList());
 
 
-          registryStoreInterface.createEntry(xmlUtils.marshall(thisRegistry));
+          registryStoreInterface.updateEntries(xmlUtils.marshall(thisRegistry));
        } catch (JAXBException | SAXException | IOException | URISyntaxException e) {
-          throw new RuntimeException("cannot createEntry registry record",e);
+          throw new RuntimeException("cannot updateEntries registry record",e);
        }
       registryStoreInterface.open();
 

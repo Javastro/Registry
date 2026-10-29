@@ -55,7 +55,7 @@ public class HarvestSourceCatalog  {
         try {
             jaxbContext = JAXBContext.newInstance(HarvestSourceList.class);
         } catch (JAXBException e) {
-            throw new RuntimeException("Cannot createEntry JAXB context for harvest catalog", e);
+            throw new RuntimeException("Cannot updateEntries JAXB context for harvest catalog", e);
         }
     }
 
@@ -223,7 +223,7 @@ public class HarvestSourceCatalog  {
     // -------------------------------------------------------------------------
 
     private void persist() {
-        // Persist catalog as a standalone document; createEntry/update.xq only mutates ri:VOResources.
+        // Persist catalog as a standalone document; updateEntries/update.xq only mutates ri:VOResources.
         store.create(serializeToXml(), CATALOG_PATH);
     }
 

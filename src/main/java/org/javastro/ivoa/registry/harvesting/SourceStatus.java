@@ -20,7 +20,8 @@ public enum SourceStatus {
     REJECTED,
     /** Source has been manually disabled by an operator. */
     DISABLED,
-   CACHED,
+   /** Source has an existing cached copy of its records, i.e. ready for intial import */
+     CACHED,
    /** Source has been capped by a discovery policy limit (depth, catalog size, etc.). */
     LIMITED
 }

@@ -33,17 +33,19 @@ public interface RegistryStoreInterface  {
 
 
     /**
-     * creates/updates the given registry entry in the registry store.
-     * The entry is given as an XML string, which should be a valid registry entry (i.e. it should conform to the VOResource schema).
+     * creates/updates the given registry entry in the managed registry store.
+     * The entry is given as an XML string, which should be a valid registry entry
+     * (i.e. it should conform to the RegistryInterface schema).
      *  The entry is stored in the standard managed location.
      * @param xml the registry entry to be stored.
      */
-    default void createEntry(String xml) {
-        createEntry(xml, "managed/base.xml");
+    default void updateEntries(String xml) {
+        updateEntries(xml, "managed/base.xml");
     }
 
     /**
-     * creates/updates the given registry entry in the registry store. The entry is given as an XML string, which should be a valid registry entry (i.e. it should conform to the VOResource schema). The path parameter is
+     * creates/updates the given registry entries in the registry store. The input is given as an XML string,
+     * which should be a valid registry entry (i.e. it should conform to the RegistryInterface schema). The path parameter is
      * used to specify the location of the entry in the registry store. The location
      * needs to have a VOResources root element already in place.
      *
@@ -51,7 +53,7 @@ public interface RegistryStoreInterface  {
      * @param path the path to store the entry in the registry store.
      *
      */
-    void createEntry(String xml, String path); // TODO - add exception - there is no signal if this fails...
+    void updateEntries(String xml, String path); // TODO - add exception - there is no signal if this fails...
 
    /**
     * delete the given entry from the store.

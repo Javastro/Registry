@@ -58,7 +58,7 @@ public class AdminResource {
         XMLValidator validator = new XMLValidator();
         boolean result = validator.validate(new StreamSource(new StringReader(resource)));
         if (result) {
-            registry.getRegistryStoreInterface().createEntry(resource);
+            registry.getRegistryStoreInterface().updateEntries(resource);
         } else {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             validator.printErrors(new PrintStream(os));

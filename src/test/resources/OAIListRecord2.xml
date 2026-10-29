@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- this is a real record from the Euro-VO registry, it is not completely XML schema valid - so a good test case -->
+<oai:OAI-PMH xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai="http://www.openarchives.org/OAI/2.0/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://purl.org/dc/elements/1.1/ http://vo.ari.uni-heidelberg.de/docs/schemata/simpledc20021212.xsd http://www.openarchives.org/OAI/2.0/ http://vo.ari.uni-heidelberg.de/docs/schemata/OAI-PMH.xsd http://www.openarchives.org/OAI/2.0/oai_dc/ http://vo.ari.uni-heidelberg.de/docs/schemata/oai_dc.xsd">
+<oai:responseDate>2026-05-29T07:18:02Z</oai:responseDate>
+<oai:request verb="ListRecords" metadataPrefix="ivo_vor" set="ivo_managed">https://registry.euro-vo.org/oai.jsp</oai:request>
+<oai:ListRecords>
+<oai:record>
+    <oai:header status="deleted">
+        <oai:identifier>ivo://idoc.ginco/herschel/spirepacsCutOut</oai:identifier>
+        <oai:datestamp>2025-03-02T14:38:03Z</oai:datestamp>
+        <oai:setSpec>ivo_managed</oai:setSpec>
+    </oai:header>
+</oai:record>
+
+<!-- updated record -->
+<oai:record>
+    <oai:header>
+        <oai:identifier>ivo://obelix.lambrate.inaf.it</oai:identifier>
+        <oai:datestamp>2017-10-23T09:01:09Z</oai:datestamp>
+        <oai:setSpec>ivo_managed</oai:setSpec>
+    </oai:header>
+        <oai:metadata><ri:Resource xmlns:ri="http://www.ivoa.net/xml/RegistryInterface/v1.0"
+                     xmlns:vg="http://www.ivoa.net/xml/VORegistry/v1.0"
+                     xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                     xmlns:vr="http://www.ivoa.net/xml/VOResource/v1.0"
+                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                     created="2008-04-04T17:39:36Z"
+                     status="inactive"
+                     updated="2017-10-23T11:00:27.361"
+                     xsi:type="vg:Authority">
+                  <validationLevel validatedBy="ivo://archive.stsci.edu/nvoregistry">2</validationLevel>
+                  <title> Authority Name for IASF - Milano Updated </title>
+                  <shortName>INAF-IASF-MI</shortName>
+                  <identifier>ivo://obelix.lambrate.inaf.it</identifier>
+                  <curation>
+                    <publisher ivo-id="ivo://obelix.lambrate.inaf.it/INAF-IASF-MI">         Istituto di Astrofisica Spaziale e Fisica Cosmica - Milano (IASF)      </publisher>
+                    <contact>
+                      <name>VODB Manager</name>
+                      <email>luigi@lambrate.inaf.it</email>
+                    </contact>
+                  </curation>
+                  <content>
+                    <subject>virtual observatory</subject>
+                    <description>         This naming authority is for identifying resources from          IASF - Milano      </description>
+                    <referenceURL>http://www.iasf-milano.inaf.it/</referenceURL>
+                    <type>Other</type>
+                    <contentLevel>General</contentLevel>
+                  </content>
+                  <managingOrg ivo-id="ivo://obelix.lambrate.inaf.it/INAF-IASF-MI">       Istituto di Astrofisica Spaziale e Fisica Cosmica - Milano (IASF)    </managingOrg>
+                </ri:Resource>
+        </oai:metadata>
+</oai:record>
+<!-- new record -->
+<oai:record>
+    <oai:header>
+        <oai:identifier>ivo://arches2</oai:identifier>
+        <oai:datestamp>2018-12-25T15:55:49Z</oai:datestamp>
+        <oai:setSpec>ivo_managed</oai:setSpec>
+    </oai:header>
+        <oai:metadata><ri:Resource xmlns:ri="http://www.ivoa.net/xml/RegistryInterface/v1.0"
+                     xmlns:ssa="http://www.ivoa.net/xml/SSA/v0.4"
+                     xmlns:stc="http://www.ivoa.net/xml/STC/stc-v1.30.xsd"
+                     xmlns:tsa="http://www.ivoa.net/xml/TSA/v0.2"
+                     xmlns:stap="urn:astrogrid:schema:vo-resource-types:STAP:v1.0"
+                     xmlns:sla="http://www.ivoa.net/xml/SLA/v0.2"
+                     xmlns:sia="http://www.ivoa.net/xml/SIA/v1.0"
+                     xmlns:osn="http://www.ivoa.net/xml/OpenSkyNode/v0.2"
+                     xmlns:ceab="http://www.ivoa.net/xml/CEA/base/v1.0"
+                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                     xmlns:cs="http://www.ivoa.net/xml/ConeSearch/v1.0"
+                     xmlns:vg="http://www.ivoa.net/xml/VORegistry/v1.0"
+                     xmlns:tap10="http://www.ivoa.net/xml/TAPRegExt/v1.0"
+                     xmlns:oai="http://www.openarchives.org/OAI/2.0/"
+                     xmlns:vstd="http://www.ivoa.net/xml/StandardsRegExt/v1.0"
+                     xmlns:sn="http://www.ivoa.net/xml/SkyNode/v0.2"
+                     xmlns:vr="http://www.ivoa.net/xml/VOResource/v1.0"
+                     xmlns:slap="http://www.ivoa.net/xml/SLAP/v1.0"
+                     xmlns:vs="http://www.ivoa.net/xml/VODataService/v1.0"
+                     xmlns:cea="http://www.ivoa.net/xml/CEA/v1.0rc1"
+                     xmlns:tr="http://www.ivoa.net/xml/TAPRegExt/v1.0"
+                     xmlns:xlink="http://www.w3.org/1999/xlink"
+                     created="2015-04-17T11:50:20Z"
+                     status="active"
+                     updated="2016-01-07T10:19:45Z"
+                     xsi:schemaLocation="http://www.ivoa.net/xml/RegistryInterface/v1.0   http://www.ivoa.net/xml/RegistryInterface/v1.0                     http://www.ivoa.net/xml/VOResource/v1.0          http://www.ivoa.net/xml/VOResource/v1.0                     http://www.ivoa.net/xml/VORegistry/v1.0          http://www.ivoa.net/xml/VORegistry/v1.0                     http://www.ivoa.net/xml/VODataService/v1.0       http://www.ivoa.net/xml/VODataService/v1.0                     http://www.ivoa.net/xml/SIA/v1.0                 http://www.ivoa.net/xml/SIA/v1.0                     http://www.ivoa.net/xml/ConeSearch/v1.0          http://www.ivoa.net/xml/ConeSearch/v1.0                     http://www.ivoa.net/xml/OpenSkyNode/v0.2         http://www.ivoa.net/xml/OpenSkyNode/v0.2                     http://www.ivoa.net/xml/SSA/v0.4                 http://www.ivoa.net/xml/SSA/v0.4                     urn:astrogrid:schema:vo-resource-types:STAP:v1.0 http://software.astrogrid.org/schema/vo-resource-types/STAP/v1.0/STAP.xsd                     http://www.ivoa.net/xml/SLA/v0.2                 http://esavo.esa.int/xml/SLA-v0.2.xsd                     http://www.ivoa.net/xml/TSA/v0.2                 http://esavo.esa.int/xml/TSA-v0.2.xsd                     http://www.ivoa.net/xml/CEA/base/v1.0rc1         http://software.astrogrid.org/schema/cea/CEABase/v1.0rc1/CEABase.xsd                     http://www.ivoa.net/xml/CEA/v1.0rc1              http://software.astrogrid.org/schema/vo-resource-types/CEAService/v1.0rc1/CEAService.xsd"
+                     xsi:type="vg:Authority">
+           <title>Astronomical Resource Cross-matching for High Energy Studies (new)</title>
+           <shortName>Arches2</shortName>
+           <identifier>ivo://arches2</identifier>
+           <curation>
+              <publisher>Observatory of Strasbourg, SSC Team</publisher>
+              <creator>
+                 <name>ARCHES - Astronomical Resource Cross-matching for High Energy Studies</name>
+                 <logo>http://www.arches-fp7.eu/images/logo.png</logo>
+              </creator>
+              <date role="Project start">2013-01-01</date>
+              <date role="Project end">2015-12-31</date>
+              <contact>
+                 <name>Laurent MICHEL</name>
+                 <address>11 Rue de l Universite - 67000 Strasbourg - France</address>
+                 <email>laurent.michel@astro.unistra.fr</email>
+                 <telephone>33 365 852 437</telephone>
+              </contact>
+           </curation>
+           <content>
+              <subject>Arches Data</subject>
+              <description>ARCHES is focused on the 3XMM (DR4/DR5) catalogue data from the XMM-Newton mission. New tools will be developed for cross-correlation with extensive archival resources, producing well-characterised multi-wavelength data in the form of spectral energy distributions for large sets of objects. These enhanced resources are significantly broaden the effective exploitation of the data by the scientific community in the exploration of a wide range of forefront astrophysical questions.</description>
+              <referenceURL>http://www.arches-fp7.eu/</referenceURL>
+              <type>Archive</type>
+              <contentLevel>Research</contentLevel>
+           </content>
+           <managingOrg>Observatory of Strasbourg, SSC Team</managingOrg>
+        </ri:Resource>
+        </oai:metadata>
+</oai:record>
+ <oai:resumptionToken completeListSize="390" cursor="0">49bba0f9-3445-4b63-894e-3074c57f0a71||100</oai:resumptionToken>
+</oai:ListRecords>
+</oai:OAI-PMH>

@@ -33,6 +33,7 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.List;
 
 //TODO replace this with similar from ivoacore:common
@@ -100,6 +101,35 @@ public class XMLUtils {
    }
 
 
+   /**
+    * Convert an OAI-PMH ListRecords response to a VOResources document.
+    * @param input path to raw OAI-PMH ListRecords response XML file.
+    * @return XML string containing a VOResources document with all the resources from the OAI-PMH ListRecords response in the input file.
+    */
+   public String rawOAIToResources(Path input) {
+      return rawOAIToResources(new StreamSource(input.toFile()));
+   }
+
+   /**
+    * Convert an OAI-PMH ListRecords response to a VOResources document.
+    * @param input path to raw OAI-PMH ListRecords response XML file.
+    * @return XML string containing a VOResources document with all the resources from the OAI-PMH ListRecords response in the input file.
+    */
+   public String rawOAIToResources(Source input) {
+      try {
+         StringWriter sw = new StringWriter();
+         Serializer out = processor.newSerializer(sw);
+         out.setOutputProperty(Serializer.Property.METHOD, "xml");
+         out.setOutputProperty(Serializer.Property.INDENT, "yes");
+         Xslt30Transformer transformer = cleaningStylesheet.load30();
+         transformer.transform(input, out);
+         return sw.toString();
+      } catch (SaxonApiException e) {
+         throw new RuntimeException(e);
+      }
+   }
+
+
 
    public String marshallElement(JAXBElement<?> element) {
 
@@ -119,6 +149,33 @@ public class XMLUtils {
       }
    }
 
+
+   /**
+    * Concatenate all the OAI ListRecords chunk files (*.xml) in a directory into a single
+    * VOResources document, using the fixHarvest stylesheet.
+    * @param dir directory containing the cached chunk files.
+    * @return path of a temporary file containing the combined XML (caller should delete it).
+    */
+   public java.nio.file.Path concatenateCache(java.nio.file.Path dir) {
+      try {
+         java.nio.file.Path tmp = java.nio.file.Files.createTempFile("concatCache", ".xml");
+         try {
+            Serializer out = processor.newSerializer(tmp.toFile());
+            out.setOutputProperty(Serializer.Property.METHOD, "xml");
+            out.setOutputProperty(Serializer.Property.INDENT, "yes");
+            Xslt30Transformer transformer = cleaningStylesheet.load30();
+            transformer.setStylesheetParameters(java.util.Map.of(
+                  new net.sf.saxon.s9api.QName("inputDir"), new XdmAtomicValue(dir.toAbsolutePath().toString())));
+            transformer.transform(new StreamSource(new StringReader("<x/>")), out);
+            return tmp;
+         } catch (SaxonApiException | RuntimeException e) {
+            java.nio.file.Files.deleteIfExists(tmp);
+            throw e;
+         }
+      } catch (SaxonApiException | IOException e) {
+         throw new RuntimeException(e);
+      }
+   }
 
    public String marshallOAI(OAIPMH element) {
       StringWriter sw = new StringWriter();

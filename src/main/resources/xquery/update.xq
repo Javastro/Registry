@@ -19,24 +19,16 @@ Some  testing.
 let $_ := admin:write-log('writing to  ' || $path, 'INFO')
 :)
 
-(# db:updindex false #) (# db:autooptimize false #) {
-for $r in fn:collection(fn:string-join(("Registry/",$path)))/ri:VOResources
-   let $in := fn:parse-xml($rin)//ri:Resource
-   let $existingIDs := $r/ri:Resource/identifier[text() = $in//identifier/text()]
-   let $new := $in[not(identifier = ($existingIDs) )]
-   let $ups := $in[identifier = ($existingIDs) ]
-    return       (insert nodes $new into $r, 
-    (: now update any existing :)
-  (for $u in
-      fn:collection(fn:string-join(("Registry/",$path)))/ri:VOResources/ri:Resource[identifier = ($existingIDs)]
-      let $upid := $u/identifier
-     
-    return (replace node $u with $in[identifier=$upid]),
-    (# db:updindex true #) {
-    db:flush("Registry")
-  }
-  ))
-}    
+(# db:updindex false #) (# db:autooptimize true #) {
+ let $in := fn:parse-xml($rin)//ri:Resource
+ for $r in fn:collection(fn:string-join(("Registry/",$path)))/ri:VOResources/ri:Resource[identifier = $in/identifier/text()]
+    let $upid := $r/identifier
+    return  replace node $r with $in[identifier=$upid] 
+}  
+  
+
+
+  
        
    
    

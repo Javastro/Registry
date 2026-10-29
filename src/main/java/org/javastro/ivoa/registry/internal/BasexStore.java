@@ -32,7 +32,7 @@ public class BasexStore  implements RegistryStoreInterface{
    protected static final Context context = new Context();
 
    private static String updateQuery;
-
+   private static String addQuery;
 
    Logger log = Logger.getLogger(this.getClass());//IMPL would like to inject - did not work... see https://quarkus.io/guides/logging#injection-of-a-configured-logger
 
@@ -43,6 +43,13 @@ public class BasexStore  implements RegistryStoreInterface{
       try (InputStream s =BasexStore.class.getResourceAsStream("/xquery/update.xq")) {
          assert s != null;
          updateQuery = new String(s.readAllBytes());
+      } catch (IOException e) {
+         throw new RuntimeException(e);
+      }
+
+      try (InputStream s =BasexStore.class.getResourceAsStream("/xquery/add.xq")) {
+         assert s != null;
+         addQuery = new String(s.readAllBytes());
       } catch (IOException e) {
          throw new RuntimeException(e);
       }
@@ -103,6 +110,7 @@ public class BasexStore  implements RegistryStoreInterface{
    public void create(String content, String path) {
       try {
          new Put(path, content).execute(context);
+         new Flush().execute(context);
       } catch (BaseXException e) {
          throw new RuntimeException(e);
       }
@@ -115,13 +123,27 @@ public class BasexStore  implements RegistryStoreInterface{
       try {
          //IMPL Put will treat the file path as a string and read the file content
          new Put(path, file.toAbsolutePath().toString()).execute(context);
+         new Flush().execute(context);
       } catch (BaseXException e) {
          throw new RuntimeException(e);
       }
    }
 
    @Override
-   public void createEntry(String xml, String path) {
+   public void updateEntries(String xml, String path) {
+      //do the updates first
+      runQuery(xml, path, updateQuery);
+      // then the additions
+      runQuery(xml, path, addQuery);
+      try {
+         new Flush().execute(context);
+      } catch (BaseXException e) {
+         throw new RuntimeException(e);
+      }
+
+   }
+
+   private void runQuery(String xml, String path, String updateQuery) {
       try( QueryProcessor proc = new QueryProcessor(updateQuery, context))
       {
          proc.variable("rin", xml);
@@ -160,6 +182,7 @@ public class BasexStore  implements RegistryStoreInterface{
    public void delete(String path) {
       try {
          new Delete(path).execute(context);
+         new Flush().execute(context);
       } catch (BaseXException e) {
          throw new RuntimeException(e);
       }

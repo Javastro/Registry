@@ -155,6 +155,26 @@ public class HarvestAdminResource {
       return Response.accepted().entity("Source " + key + " caching started").build();
    }
 
+   @Operation(summary = "Load the cache of a source into the registry store",
+         description = "concatenates the cached harvest files of a source into a single document and saves it in the XML database")
+   @POST
+   @Path("harvest/source/{key}/cache/load")
+   @RolesAllowed("update")
+   @Produces(MediaType.TEXT_PLAIN)
+   public Response loadCache(@PathParam("key") String key) {
+      if (cachingMap.containsKey(key) && !cachingMap.get(key).isDone()) {
+         return Response.status(Response.Status.CONFLICT)
+               .entity("Source " + key + " is still being cached")
+               .build();
+      }
+      if (harvestOrchestrator.loadFromCache(key)) {
+         return Response.ok("Cache of source " + key + " loaded").build();
+      }
+      return Response.status(Response.Status.NOT_FOUND)
+            .entity("Unable to load cache for source " + key)
+            .build();
+   }
+
    @GET
    @Path("harvest/source/{key}/cache")
    @RolesAllowed("update")
