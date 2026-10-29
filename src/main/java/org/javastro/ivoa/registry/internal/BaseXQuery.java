@@ -52,7 +52,7 @@ public class BaseXQuery   implements RegistryQueryInterface {
 
    public BaseXQuery(BasexStore store) {
 
-      contextRO = new Context(store.context);
+      contextRO = new Context(BasexStore.context);
       contextRO.user(contextRO.users.get("reader"));
       try {
          log.info("opening database for querying user=" + new XQuery("user:current()").execute(contextRO));
