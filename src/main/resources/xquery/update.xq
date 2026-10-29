@@ -6,7 +6,8 @@ declare variable $path as xs:string external;
 
 (: declare context value := fn:collection("Registry/managed/base.xml"); :)
 (: 
-IMPL definitely not efficient takes progressively longer as data base gets bigger FIXME needs to be faster.
+IMPL definitely not efficient for bulk creation takes progressively longer as data base gets bigger
+should only be used for update - where comparatively few new records appear.
 
 Some  testing.
 2000 records - raw save (not using this code) 2s
