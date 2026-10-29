@@ -193,19 +193,21 @@ public class HarvestClient {
             break;
          }
          sr.addAll(rec.getRecords());
-         if(rec.getResumptionToken()!=null)
+         if(rec.getResumptionToken()!=null && rec.getResumptionToken().getValue()!=null && !rec.getResumptionToken().getValue().isBlank())
          {
             total = rec.getResumptionToken().getCompleteListSize().intValue();
             resumptionToken = rec.getResumptionToken().getValue();
-            cursor = rec.getResumptionToken().getCursor()!= null?rec.getResumptionToken().getCursor().intValue(): cursor+rec.getRecords().size();
+            cursor = rec.getResumptionToken().getCursor()!= null?rec.getResumptionToken().getCursor().intValue()+rec.getRecords().size(): cursor+rec.getRecords().size();
 
          }
          else {
             resumptionToken = null;
-            total = rec.getRecords().size();
+            cursor += rec.getRecords().size();
+            if(total == 0)
+                total = rec.getRecords().size();
          }
          LOG.infov("returned: {0} of {1}",cursor,total);
-      } while (sr.size() < harvestChunkSize && !(sr.size() == total)); // allow fairly big in memory store to build up
+      } while (resumptionToken != null && sr.size() < harvestChunkSize && !(sr.size() == total)); // allow fairly big in memory store to build up
       return sr;
    }
 

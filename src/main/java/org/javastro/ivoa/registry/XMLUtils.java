@@ -130,7 +130,11 @@ public class XMLUtils {
    }
 
 
-
+   /**
+    * Marshal an Object into a XML string. The XML is cleaned up with the cleaning stylesheet to ensure that it is a valid VOResources document.
+    * @param element the input object.
+    * @return
+    */
    public String marshallElement(JAXBElement<?> element) {
 
 
