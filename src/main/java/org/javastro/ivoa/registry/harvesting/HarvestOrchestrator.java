@@ -170,26 +170,33 @@ public class HarvestOrchestrator {
         return true;
     }
 
-    private boolean initFromCache(String sourceKey) {
+    /**
+     * updates the status of the HarvestSource.
+     * @param sourceKey
+     * @return
+     */
+    private boolean initHarvestSourceFromCache(String sourceKey) {
         Optional<HarvestSource> opt = catalog.get(sourceKey);
         if (opt.isEmpty()) {
-            log.warnv("initFromCache: unknown source key {0}", sourceKey);
+            log.warnv("initHarvestSourceFromCache: unknown source key {0}", sourceKey);
             return false;
         }
         HarvestSource s = opt.get();
-        if (s.getStatus() == SourceStatus.CACHED) {
-            log.debugv("initFromCache: {0} already CACHED", sourceKey);
-            return false;
-        }
         if (s.getStatus() == SourceStatus.DISABLED || s.getStatus() == SourceStatus.REJECTED) {
-            log.debugv("initFromCache: {0} is {1} – skipping", sourceKey, s.getStatus());
+            log.debugv("initHarvestSourceFromCache: {0} is {1} – skipping", sourceKey, s.getStatus());
             return false;
         }
+
+        if (s.getStatus() == SourceStatus.CACHED) {
+            log.debugv("initHarvestSourceFromCache: {0} already CACHED", sourceKey);
+            return false;
+        }
+
         Path sourceCachePath = cachedir(sourceKey).toAbsolutePath();
         if (Files.exists(sourceCachePath)) {
 
             catalog.updateStatus(sourceKey, SourceStatus.CACHED);
-            log.infov("Initialized source {0} from cache", sourceKey);
+            log.infov("Initialized source {0} to initial load from cache", sourceKey);
             return true;
         }
         return false;
@@ -253,36 +260,43 @@ public class HarvestOrchestrator {
      * document at {@code harvested/<source-key>/rec.xml}, replacing any existing one.
      *
      * @param sourceKey the source key
-     * @return true if the content was loaded
+     * @return number of records stored
      */
-    public boolean loadFromCache(String sourceKey) {
+    public int loadFromCache(String sourceKey) {
         ensureInitialized();
         if (catalog.get(sourceKey).isEmpty()) {
             log.warnv("loadFromCache: unknown source key {0}", sourceKey);
-            return false;
+            return 0;
         }
         Path dir = cachedir(sourceKey);
         if (!Files.isDirectory(dir)) {
             log.warnv("loadFromCache: no cache directory {0}", dir);
-            return false;
+            return 0;
         }
-        Path tmp = null;
+
+        
         try {
-            tmp = xmlUtils.concatenateCache(dir);
-            registry.getRegistryStoreInterface().createFromFile(tmp, makepath(sourceKey));
-            log.infov("Loaded cache of source {0} into {1}", sourceKey, makepath(sourceKey));
-            return true;
+            String rootpath = makepath(sourceKey,"");
+            registry.getRegistryStoreInterface().delete(rootpath);
+            try (var files = Files.list(dir)) {
+                for (Path file : files.filter(Files::isRegularFile).sorted().toList()) {
+                    String path = makepath(sourceKey, file.getFileName().toString());
+                    String xml = xmlUtils.rawOAIToResources(file);
+                    registry.getRegistryStoreInterface().create(xml, path);
+                    log.infov("Loaded cache of source {0} into {1}", sourceKey, file.getFileName().toString());
+                }
+
+
+            }
+            OaiInfoExtractor extractor = new OaiInfoExtractor();
+            Instant lastHarvest = extractor.extract(Files.list(dir).findFirst().orElse(null)).timestamp();
+            catalog.updateLastSuccessful(sourceKey, lastHarvest);
+            catalog.updateStatus(sourceKey, SourceStatus.ACTIVE);
+            return registry.getRegistryQueryInterface().countResourcesInPath(makepath(sourceKey,""));
         } catch (Exception e) {
             log.errorv("loadFromCache of source {0} failed: {1}", sourceKey, e.getMessage());
-            return false;
-        } finally {
-            if (tmp != null) {
-                try {
-                    Files.deleteIfExists(tmp);
-                } catch (Exception e) {
-                    log.warnv("Could not delete temp file {0}", tmp);
-                }
-            }
+            catalog.updateStatus(sourceKey, SourceStatus.FAILED, "loadFromCache failed: " + e.getMessage());
+            return 0;
         }
     }
 
@@ -294,7 +308,6 @@ public class HarvestOrchestrator {
      */
     public int triggerHarvest(String sourceKey) {
         ensureInitialized();
-        catalog.updateStatus(sourceKey, SourceStatus.ACTIVE);
         return processSourceKey(sourceKey);
     }
 
@@ -365,7 +378,7 @@ public class HarvestOrchestrator {
 
     private int processSourceKey(String sourceKey) {
         currentSourceKey.set(sourceKey);
-        catalog.updateStatus(sourceKey, SourceStatus.RUNNING);
+
 
         final Instant harvestStart = Instant.now();
         catalog.updateLastAttempted(sourceKey, harvestStart);
@@ -380,6 +393,17 @@ public class HarvestOrchestrator {
             return 0;
         }
 
+        if(source.getStatus() == SourceStatus.CACHED) {
+            log.infov("Source {0} is cached, loading from cache", sourceKey);
+            stored = loadFromCache(sourceKey);
+            if(stored > 0) {
+                log.infov("Source {0} loaded from cache, stored {1} records", sourceKey, stored);
+                return stored;
+            }
+            return stored;
+        }
+
+        catalog.updateStatus(sourceKey, SourceStatus.RUNNING);
         log.infov("Harvesting source {0} ({1}), incremental from {2}",
                 sourceKey, source.getOaiUrl(),
                 source.getLastSuccessful() != null
@@ -511,7 +535,7 @@ public class HarvestOrchestrator {
                         });
                 catalog.getAll()
                         .forEach(s -> {
-                            initFromCache(s.getIdentifier());
+                            initHarvestSourceFromCache(s.getIdentifier());
                         });
             } catch (Exception e) {
                 catalogInitialized.set(false); // allow retry

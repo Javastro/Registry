@@ -167,7 +167,7 @@ public class HarvestAdminResource {
                .entity("Source " + key + " is still being cached")
                .build();
       }
-      if (harvestOrchestrator.loadFromCache(key)) {
+      if (harvestOrchestrator.loadFromCache(key) > 0) {
          return Response.ok("Cache of source " + key + " loaded").build();
       }
       return Response.status(Response.Status.NOT_FOUND)
