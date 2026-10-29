@@ -82,23 +82,33 @@ namespace declarations are missing.
     <!--IMPL might be better to have a named template that is called for the "scan" style processing as then there is no "main" document anyway -->
     <xsl:template match="/">
         <xsl:choose>
-            <xsl:when test="normalize-space($inputDir)=''">
+            <xsl:when test="normalize-space($inputDir)='' and not(oai:OAI-PMH)">
                 <xsl:apply-templates select="*"/>
+            </xsl:when>
+            <!-- main input is a raw OAI-PMH ListRecords response - extract the resources -->
+            <xsl:when test="normalize-space($inputDir)=''">
+                <xsl:element name="VOResources" namespace="http://www.ivoa.net/xml/RegistryInterface/v1.0">
+                    <xsl:for-each select="map:keys($std-namespaces)">
+                        <xsl:namespace name="{.}" select="map:get($std-namespaces, .)"/>
+                    </xsl:for-each>
+                    <xsl:apply-templates select="oai:OAI-PMH/oai:ListRecords/oai:record/oai:metadata/ri:Resource"/>
+                </xsl:element>
             </xsl:when>
             <xsl:otherwise>
                 <xsl:message>doing scan</xsl:message>
-                <xsl:variable name="files" select="collection(concat('file://',$inputDir,'?select=*.xml;recurse=no'))"/>
+                <!-- URIs only; each chunk is parsed in turn (not via doc()/collection()) so it can be garbage collected -->
+                <xsl:variable name="files" select="sort(uri-collection(concat('file://',$inputDir,'?select=*.xml;recurse=no')))"/>
                    <xsl:element name="VOResources" namespace="http://www.ivoa.net/xml/RegistryInterface/v1.0">
                     <!-- put in the standard set of namespace -->
                     <xsl:for-each select="map:keys($std-namespaces)">
                         <xsl:namespace name="{.}" select="map:get($std-namespaces, .)"/>
                     </xsl:for-each>
-                   </xsl:element>
                     <xsl:for-each select="$files">
                         <xsl:message>processing chunk <xsl:value-of select="concat(position(), ' of ', count($files))"/></xsl:message>
-                        <xsl:apply-templates select="./oai:OAI-PMH/oai:ListRecords/oai:record/oai:metadata/ri:Resource"/>
+                        <xsl:variable name="chunk" select="parse-xml(unparsed-text(.))"/>
+                        <xsl:apply-templates select="$chunk/oai:OAI-PMH/oai:ListRecords/oai:record/oai:metadata/ri:Resource"/>
                     </xsl:for-each>
-                
+                   </xsl:element>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
