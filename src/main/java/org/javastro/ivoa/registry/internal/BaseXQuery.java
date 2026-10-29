@@ -173,4 +173,10 @@ public class BaseXQuery   implements RegistryQueryInterface {
          throw new RuntimeException(e);
       }
    }
+
+   @Override
+   public int countResourcesInPath(String regPath) throws BaseXException {
+      String query = "count(fn:collection('Registry/"+regPath+"')/*/ri:Resource)";
+      return Integer.parseInt(new XQuery(namespaces+query).execute(contextRO));
+   }
 }

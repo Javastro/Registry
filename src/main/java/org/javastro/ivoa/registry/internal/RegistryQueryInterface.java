@@ -20,4 +20,6 @@ public interface RegistryQueryInterface extends RegistryOaiPMHInterface {
    Resource getResource(Ivoid id) throws BaseXException;
 
    List<Service> listServices();
+
+   int countResourcesInPath(String regPath) throws BaseXException;
 }
