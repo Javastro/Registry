@@ -192,7 +192,7 @@ public class XMLUtils {
    }
 
    public String serializeRecords(List<RecordType> records) throws IOException, SAXException, TransformerException {
-      Document resourcesDOM = docBuilder.parse(XMLUtils.class.getResourceAsStream("/RegistryBase.xml"));
+      Document resourcesDOM = docBuilder.parse(XMLUtils.class.getResourceAsStream("/VOResourcesBase.xml"));
       for(RecordType r : records) {
          if(r.getMetadata()!=null && r.getMetadata().getAny() instanceof Node resourceNode) {
             Node imported = resourcesDOM.importNode(resourceNode, true);
