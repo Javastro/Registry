@@ -32,6 +32,7 @@ public class BasexStore  implements RegistryStoreInterface{
 
    private static String updateQuery;
    private static String addQuery;
+   private static String deleteQuery;
 
    Logger log = Logger.getLogger(this.getClass());//IMPL would like to inject - did not work... see https://quarkus.io/guides/logging#injection-of-a-configured-logger
 
@@ -49,6 +50,13 @@ public class BasexStore  implements RegistryStoreInterface{
       try (InputStream s =BasexStore.class.getResourceAsStream("/xquery/add.xq")) {
          assert s != null;
          addQuery = new String(s.readAllBytes());
+      } catch (IOException e) {
+         throw new RuntimeException(e);
+      }
+
+      try (InputStream s =BasexStore.class.getResourceAsStream("/xquery/delete.xq")) {
+         assert s != null;
+         deleteQuery = new String(s.readAllBytes());
       } catch (IOException e) {
          throw new RuntimeException(e);
       }
@@ -159,6 +167,18 @@ public class BasexStore  implements RegistryStoreInterface{
     throw new UnsupportedOperationException("deleteEntry not implemented yet");
    }
 
+
+   @Override
+   public void deleteEntry(String identifier, String path) {
+      try (QueryProcessor proc = new QueryProcessor(deleteQuery, context)) {
+         proc.variable("id", identifier);
+         proc.variable("path", path);
+         proc.value();
+         new Flush().execute(context);
+      } catch (QueryException | BaseXException e) {
+         throw new RuntimeException(e);
+      }
+   }
 
    @Override
    public String read(String path) throws BaseXException {

@@ -15,7 +15,10 @@ import org.ivoa.dm.regtap.Resource;
 import org.javastro.ivoa.registry.Registry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
 
+import javax.xml.transform.Source;
+import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamSource;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -35,7 +38,7 @@ import java.util.concurrent.Executors;
  */
 @io.quarkus.arc.profile.IfBuildProfile("regtap")
 @ApplicationScoped
-public class RegTapLoader {
+public class RegTapLoader implements org.javastro.ivoa.registry.harvesting.RelationalRecordSink {
    private static final Logger log = LoggerFactory.getLogger(RegTapLoader.class);
    private static final String XSL = "convertToRegTap.xsl";
    private static final String MODEL_PACKAGE = "org.ivoa.dm.regtap.";
@@ -169,11 +172,27 @@ public class RegTapLoader {
       return "db:get('Registry', '" + path.trim().replace("'", "''") + "')/*/ri:Resource";
    }
 
-   RegTAPModel convert(String xml) throws Exception {
+   /**
+    * Convert XML to a RegTAPModel.
+    * @param xml the XML sourceg.
+    * @return the RegTAPModel.
+    * @throws Exception if the XML cannot be converted.
+    */
+   RegTAPModel convert(Source xml) throws Exception {
       StringWriter out = new StringWriter();
-      executable().load30().transform(new StreamSource(new StringReader(xml)), processor.newSerializer(out));
+      executable().load30().transform(xml, processor.newSerializer(out));
       return (RegTAPModel) RegTAPModel.contextFactory().createUnmarshaller()
             .unmarshal(new StringReader(out.toString()));
+   }
+
+   /**
+    * Convert XML string to RegTAPModel
+    * @param xml XML String
+    * @return
+    * @throws Exception
+    */
+   RegTAPModel convert(String xml) throws Exception {
+      return convert(new StreamSource(new StringReader(xml)));
    }
 
    private synchronized XsltExecutable executable() throws Exception {
@@ -198,6 +217,52 @@ public class RegTapLoader {
       return resources.size();
    }
    
+   @Override
+   public void addResource(String resourceXml) throws Exception {
+      RegTAPModel model = convert(resourceXml);
+      QuarkusTransaction.requiringNew().run(() -> {
+         for (Resource r : model.getResource()) {
+            removeByIvoid(r.getIvoid());
+            truncateStrings(r);
+            em.persist(r);
+         }
+         em.flush();
+         em.clear();
+      });
+   }
+
+   @Override
+   public void addResource(Node resourceXml) throws Exception {
+      RegTAPModel model = convert(new DOMSource(resourceXml));
+      QuarkusTransaction.requiringNew().run(() -> {
+         for (Resource r : model.getResource()) {
+            removeByIvoid(r.getIvoid());
+            truncateStrings(r);
+            em.persist(r);
+         }
+         em.flush();
+         em.clear();
+      });
+   }
+
+
+   @Override
+   public void deleteResource(String identifier) {
+      QuarkusTransaction.requiringNew().run(() -> {
+         removeByIvoid(identifier);
+         em.flush();
+         em.clear();
+      });
+   }
+
+   private void removeByIvoid(String ivoid) {
+      for (Object o : em.createQuery("select r from resource r where r.ivoid = :id")
+            .setParameter("id", ivoid).getResultList()) {
+         em.remove(o);
+      }
+      em.flush();
+   }
+
    int update(RegTAPModel model) {
       List<Resource> resources = model.getResource();
       for (Resource r : resources) {

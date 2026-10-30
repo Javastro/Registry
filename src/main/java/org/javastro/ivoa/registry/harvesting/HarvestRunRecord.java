@@ -17,7 +17,8 @@ import java.time.Instant;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(propOrder = {
-        "startTime", "endTime", "recordsStored", "newSourcesDiscovered", "outcome", "details"
+        "startTime", "endTime", "recordsStored", "newSourcesDiscovered", "outcome", "details",
+        "relationalAdded", "relationalDeleted", "relationalFailed", "relationalFailures"
 })
 public class HarvestRunRecord {
 
@@ -30,6 +31,23 @@ public class HarvestRunRecord {
     /** {@code "SUCCESS"} or {@code "FAILED"}. */
     private String outcome;
     private String details;
+    private int relationalAdded;
+    private int relationalDeleted;
+    private int relationalFailed;
+    /** Bounded list of "identifier: message" entries for resources that failed to load into the relational DB. */
+    @jakarta.xml.bind.annotation.XmlElement(name = "relationalFailure")
+    private java.util.List<String> relationalFailures = new java.util.ArrayList<>();
+
+    public int getRelationalAdded() { return relationalAdded; }
+    public void setRelationalAdded(int n) { this.relationalAdded = n; }
+
+    public int getRelationalDeleted() { return relationalDeleted; }
+    public void setRelationalDeleted(int n) { this.relationalDeleted = n; }
+
+    public int getRelationalFailed() { return relationalFailed; }
+    public void setRelationalFailed(int n) { this.relationalFailed = n; }
+
+    public java.util.List<String> getRelationalFailures() { return relationalFailures; }
 
     public HarvestRunRecord() {
     }

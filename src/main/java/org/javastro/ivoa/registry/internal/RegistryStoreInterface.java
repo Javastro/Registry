@@ -61,6 +61,13 @@ public interface RegistryStoreInterface  {
      * @param id
     */
      void deleteEntry(Ivoid id);
+
+    /**
+     * delete the resource with the given identifier from the document at the given path.
+     * @param identifier the IVOA identifier (ivo://...) of the resource.
+     * @param path the path of the VOResources document within the store.
+     */
+    void deleteEntry(String identifier, String path);
     /**
      * read the content of the given path from the store.
      * @param path the path to read from the store. The path should be a valid path within the store, and should include the filename (e.g. "managed/base.xml").

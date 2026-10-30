@@ -70,6 +70,9 @@ public class HarvestOrchestrator {
     @Inject
     HarvestingConfig harvestingConfig;
 
+    @Inject
+    jakarta.enterprise.inject.Instance<RelationalRecordSink> relationalSink;
+
 
 
     static final String REGISTRY_STANDARD_ID_PREFIX = "ivo://ivoa.net/std/Registry";
@@ -384,6 +387,7 @@ public class HarvestOrchestrator {
         final Instant harvestStart = Instant.now();
         catalog.updateLastAttempted(sourceKey, harvestStart);
         int stored = 0;
+        final RelationalStats relational = new RelationalStats();
         int newSources = 0;
         String outcome = "SUCCESS";
         String details = "";
@@ -462,6 +466,8 @@ public class HarvestOrchestrator {
                     stored += stored_local;
 
                     //FIXME - need to delete any deleted records
+                    syncDeleted(records, path, relational);
+                    syncRelational(records, relational);
 
                     // Run discovery on the harvested records
                     if (harvestingConfig.discovery().enabled()) {
@@ -525,10 +531,62 @@ public class HarvestOrchestrator {
             catalog.updateStatus(sourceKey, SourceStatus.FAILED);
         }
 
-        catalog.appendRunRecord(sourceKey, new HarvestRunRecord(
-                harvestStart, Instant.now(), stored, newSources, outcome, details));
+        HarvestRunRecord run = new HarvestRunRecord(
+                harvestStart, Instant.now(), stored, newSources, outcome, details);
+        run.setRelationalAdded(relational.added);
+        run.setRelationalDeleted(relational.deleted);
+        run.setRelationalFailed(relational.failures.size());
+        run.getRelationalFailures().addAll(relational.failures.subList(0, Math.min(MAX_LOGGED_FAILURES, relational.failures.size())));
+        catalog.appendRunRecord(sourceKey, run);
 
         return stored;
+    }
+
+    private static final int MAX_LOGGED_FAILURES = 20;
+
+    private static class RelationalStats {
+        int added;
+        int deleted;
+        final List<String> failures = new ArrayList<>();
+    }
+
+    /** Removes records flagged as deleted from the XML store and, if enabled, the relational DB. */
+    private void syncDeleted(List<RecordType> records, String path, RelationalStats stats) {
+        for (RecordType r : records) {
+            if (r.getHeader() == null || r.getHeader().getStatus() != StatusType.DELETED) continue;
+            String id = r.getHeader().getIdentifier();
+            try {
+                registry.getRegistryStoreInterface().deleteEntry(id, path);
+            } catch (Exception e) {
+                log.errorv("Failed to delete {0} from XML store: {1}", id, e.getMessage());
+            }
+            if (relationalSink.isResolvable()) {
+                try {
+                    relationalSink.get().deleteResource(id);
+                    stats.deleted++;
+                } catch (Exception e) {
+                    stats.failures.add(id + " (delete): " + e.getMessage());
+                    log.errorv("Failed to delete {0} from relational DB: {1}", id, e.getMessage());
+                }
+            }
+        }
+    }
+
+    /** Adds each harvested resource to the relational DB individually, so one failure does not stop the harvest. */
+    private void syncRelational(List<RecordType> records, RelationalStats stats) {
+        if (!relationalSink.isResolvable()) return;
+        RelationalRecordSink sink = relationalSink.get();
+        for (RecordType r : records) {
+            if (r.getMetadata() == null || !(r.getMetadata().getAny() instanceof org.w3c.dom.Node node)) continue;
+            String id = r.getHeader() != null ? r.getHeader().getIdentifier() : "unknown";
+            try {
+                sink.addResource(node);
+                stats.added++;
+            } catch (Throwable e) {
+                stats.failures.add(id + ": " + e.getMessage());
+                log.errorv("Failed to add {0} to relational DB: {1}", id, e.getMessage());
+            }
+        }
     }
 
     private String makepath(String sourceKey) {
