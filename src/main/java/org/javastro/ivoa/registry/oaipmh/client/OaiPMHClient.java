@@ -13,9 +13,13 @@ import jakarta.xml.bind.Unmarshaller;
 import jakarta.xml.bind.util.ValidationEventCollector;
 import net.sf.saxon.s9api.SaxonApiException;
 import org.javastro.ivoa.entities.oai.oaipmh.*;
+import org.javastro.ivoa.registry.XMLUtils;
 import org.javastro.ivoa.schema.SchemaMap;
 import org.jboss.logging.Logger;
+import org.json.XML;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xmlresolver.ResolverFeature;
@@ -24,12 +28,18 @@ import org.xmlresolver.XMLResolverConfiguration;
 import org.xmlresolver.catalog.entry.EntryCatalog;
 
 import javax.xml.XMLConstants;
-import javax.xml.transform.Source;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -40,20 +50,24 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * OAIPMH client using java.net.http transport. i.e. not relying on Quarkus.
  */
 public class OaiPMHClient {
     private static final Logger LOG = Logger.getLogger(OaiPMHClient.class);
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(OaiPMHClient.class);
 
     private final HttpClient httpClient;
     private final JAXBContext jaxbconxt;
     private final boolean doXMLValidation;
     private final URI baseUri;
     private final OaiInfoExtractor oaiInfoExtractor;
+    private final DocumentBuilder docBuilder;
+    private final XMLUtils xmlUtils = new XMLUtils();
 
+   public final static String METADATA_PREFIX = "ivo_vor";
+   public static final String IVO_MANAGED_SET = "ivo_managed";
 
     public OaiPMHClient(String url, boolean doXMLValidation) {
         this.doXMLValidation = doXMLValidation;
@@ -65,7 +79,12 @@ public class OaiPMHClient {
                         + ":org.javastro.ivoa.entities.oai.dublincore"
                         + ":org.javastro.ivoa.entities.oai.dublincore.simple");
             oaiInfoExtractor = new OaiInfoExtractor();
-        } catch (JAXBException | SaxonApiException e) {
+           DocumentBuilderFactory dbf = DocumentBuilderFactory
+                 .newInstance();
+           dbf.setNamespaceAware(true);
+           dbf.setValidating(false);
+           docBuilder = dbf.newDocumentBuilder();
+        } catch (JAXBException | SaxonApiException | ParserConfigurationException e) {
             throw new RuntimeException(e);
         }
     }
@@ -130,6 +149,35 @@ public class OaiPMHClient {
         return oaiInfoExtractor.extract(response.body());
     }
 
+   /**
+    * check that the registry is set up to be harvestable
+    * @return true if OK
+    */
+   public boolean validate(){
+      boolean retval = true;
+      try {
+         ListMetadataFormatsType mt = this.listMetadataFormats();
+
+         if(mt == null || mt.getMetadataFormats().stream().noneMatch(m -> m.getMetadataPrefix().equals("ivo_vor")))
+         {
+            retval = false;
+            LOG.errorv("the Registry at {0} does not serve metadata format {1}",this.getUri(), METADATA_PREFIX);
+         }
+
+         ListSetsType st = this.listSets();
+         if(st == null || st.getSets().stream().noneMatch(m -> m.getSetSpec().equals(IVO_MANAGED_SET)))
+         {
+            retval = false;
+            LOG.errorv("the Registry at {0} does not have a harvestable set {1}",this.getUri(),IVO_MANAGED_SET );
+         }
+      } catch (OaiPMHException e) {
+         retval = false;
+         LOG.errorv("the Registry at {0} has returned an error {}",this.getUri(), e.getMessage());
+
+      }
+
+      return retval;
+   }
 
 
     private void processParams(UriBuilder req, String metadataPrefix, String set, Instant from, Instant until, String resumptionToken) throws OaiPMHException {
@@ -220,6 +268,27 @@ public class OaiPMHClient {
         EntryCatalog cat = manager.loadCatalog(caturi, new InputSource(new StringReader(SchemaMap.xmlCatalogue)));
         return new XMLResolver(config);
     }
+
+   /**
+    * This will
+    * @param records - a records response from {@link org.javastro.ivoa.registry.oaipmh.client.OaiPMHClient}
+    * @return
+    * @throws IOException
+    * @throws SAXException
+    * @throws TransformerException
+    */
+   public String serializeRecords(List<RecordType> records) throws IOException, SAXException, TransformerException {
+      Document resourcesDOM = docBuilder.parse(XMLUtils.class.getResourceAsStream("/VOResourcesBase.xml"));
+      for(RecordType r : records) {
+         if(r.getMetadata()!=null && r.getMetadata().getAny() instanceof Node resourceNode) {
+            Node imported = resourcesDOM.importNode(resourceNode, true);
+            resourcesDOM.getDocumentElement().appendChild(imported);
+         }
+      }
+      //IMPL - there might be some delarations at OAI level that are lost.....
+      return xmlUtils.rawOAIToResources(new DOMSource(resourcesDOM));
+   }
+
 }
 
 

@@ -14,7 +14,8 @@ import org.javastro.ivoa.entities.resource.Capability;
 import org.javastro.ivoa.entities.resource.Resource;
 import org.javastro.ivoa.entities.resource.registry.Harvest;
 import org.javastro.ivoa.entities.resource.registry.OAIHTTP;
-import org.javastro.ivoa.entities.oai.oaipmh.RecordType;
+import org.javastro.ivoa.entities.oai.oaipmh.*;
+import org.javastro.ivoa.registry.oaipmh.client.OaiPMHException;
 import org.javastro.ivoa.registry.Registry;
 import org.javastro.ivoa.registry.XMLUtils;
 import org.javastro.ivoa.registry.internal.HarvestSourceCatalog;
@@ -56,7 +57,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @ApplicationScoped
 public class HarvestOrchestrator {
 
-    private static final int MAX_ITERATIONS = 2000;
+    private static final int MAX_ITERATIONS = 1000;
     @Inject
     Logger log;
 
@@ -410,27 +411,54 @@ public class HarvestOrchestrator {
                         ? source.getLastSuccessful() : "beginning");
 
         try {
-            HarvestClient client = new HarvestClient(source.getOaiUrl(), harvestingConfig.discovery().doXmlValidation(), 2000);
+            OaiPMHClient client = new OaiPMHClient(source.getOaiUrl(), harvestingConfig.discovery().doXmlValidation());
             if (!client.validate()) {
                 log.errorv("Source {0} failed OAI-PMH validation", sourceKey);
                 outcome = "FAILED";
                 details = "OAI-PMH validation failed";
                 catalog.updateStatus(sourceKey, SourceStatus.FAILED);
             } else {
-                client.resetCursor();//should be done on creation, but just in case.
+                String resumptionToken = null;
+                int iter = 0;
+                int nrunning=0;
+                int ntotal = 0;
                 do {
                     int stored_local=0;
-                    List<RecordType> records = client.getRecords(source.getLastSuccessful(), null, source.getDiscoverySet());
+                    ListRecordsType listing;
+                    try {
+                        listing = client.listRecords(resumptionToken == null ? HarvestClient.METADATA_PREFIX : null,
+                              source.getDiscoverySet(), source.getLastSuccessful(), null, resumptionToken);
+                    } catch (OaiPMHException e) {
+                        // OAI error response (e.g. noRecordsMatch) - nothing (more) to harvest
+                        log.infov("ListRecords for {0} returned an OAI error: {1}", sourceKey, e.getMessage());
+                        break;
+                    }
+                    if (listing == null || listing.getRecords().isEmpty()) {
+                        break;
+                    }
+                    List<RecordType> records = listing.getRecords();
+                    ResumptionTokenType rt = listing.getResumptionToken();
+                    if(rt != null ) {
+                        ntotal = rt.getCompleteListSize() != null ? rt.getCompleteListSize().intValue() : records.size();
+                        resumptionToken = rt.getValue() != null && !rt.getValue().isBlank() ? rt.getValue() : null;
+                    }
+                    else {
+                        resumptionToken = null;
+                        if(ntotal == 0) {
+                            ntotal = records.size();
+                        }
+                    }
+                    nrunning += records.size();
                     final String path = makepath(sourceKey);
                     if (!registry.getRegistryStoreInterface().exists(path)) {
                         //TODO would be nice if the store functions actually returned the number of successful stores.
-                        registry.getRegistryStoreInterface().create(xmlUtils.serializeRecords(records), path);
+                        registry.getRegistryStoreInterface().create(client.serializeRecords(records), path); //FIXME
                         stored_local = records.size();
                     } else {
-                        registry.getRegistryStoreInterface().updateEntries(xmlUtils.serializeRecords(records), path);
+                        registry.getRegistryStoreInterface().updateEntries(client.serializeRecords(records), path);
                         stored_local = records.size();
                     }
-                    log.infov("Source {0}: stored {1} records in this iteration", sourceKey, stored_local);
+                    log.infov("Source {0}: stored {1} records in this iteration {2}/{3}", sourceKey, stored_local, nrunning, ntotal);
                     stored += stored_local;
 
                     //FIXME - need to delete any deleted records
@@ -456,7 +484,7 @@ public class HarvestOrchestrator {
                         }
                     }
 
-                } while (client.hasMoreRecords());
+                } while (resumptionToken != null && ++iter < MAX_ITERATIONS);
 
 
                 catalog.updateLastSuccessful(sourceKey, harvestStart);
@@ -467,7 +495,7 @@ public class HarvestOrchestrator {
                 // Update identifier from identify() response if we don't have one yet - TODO this is probably over complex - generated by AI
                 if (source.getIdentifier() == null || source.getIdentifier().isEmpty()) {
                     try {
-                        Resource identified = client.identify();
+                        Resource identified = xmlUtils.OaiIdentifyToResource(client.identify());
                         if (identified != null && identified.getIdentifier() != null
                                 && !identified.getIdentifier().isEmpty()) {
                             HarvestSource updated = catalog.get(sourceKey).orElse(source);

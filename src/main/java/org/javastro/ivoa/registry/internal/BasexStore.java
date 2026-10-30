@@ -3,7 +3,6 @@ package org.javastro.ivoa.registry.internal;
  * Created on 30/05/2023 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 
-import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.basex.core.BaseXException;
 import org.basex.core.Context;
@@ -62,7 +61,7 @@ public class BasexStore  implements RegistryStoreInterface{
             if(!context.databases.list().contains(REGDB_NAME)) {
                 log.info("creating "+REGDB_NAME);
                 String result = new CreateDB(REGDB_NAME).execute(context);
-                new Put("managed/base.xml", Objects.requireNonNull(BasexStore.class.getResource("/RegistryBase.xml")).toString()).execute(context);
+                new Put("managed/base.xml", Objects.requireNonNull(BasexStore.class.getResource("/VOResourcesBase.xml")).toString()).execute(context);
 
             }
             User reader = context.users.get("reader");

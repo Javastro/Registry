@@ -82,16 +82,13 @@ namespace declarations are missing.
     <!--IMPL might be better to have a named template that is called for the "scan" style processing as then there is no "main" document anyway -->
     <xsl:template match="/">
         <xsl:choose>
-            <xsl:when test="normalize-space($inputDir)='' and not(oai:OAI-PMH)">
-                <xsl:apply-templates select="*"/>
-            </xsl:when>
             <!-- main input is a raw OAI-PMH ListRecords response - extract the resources -->
             <xsl:when test="normalize-space($inputDir)=''">
                 <xsl:element name="VOResources" namespace="http://www.ivoa.net/xml/RegistryInterface/v1.0">
                     <xsl:for-each select="map:keys($std-namespaces)">
                         <xsl:namespace name="{.}" select="map:get($std-namespaces, .)"/>
                     </xsl:for-each>
-                    <xsl:apply-templates select="oai:OAI-PMH/oai:ListRecords/oai:record/oai:metadata/ri:Resource"/>
+                    <xsl:apply-templates select="//ri:Resource"/>
                 </xsl:element>
             </xsl:when>
             <xsl:otherwise>

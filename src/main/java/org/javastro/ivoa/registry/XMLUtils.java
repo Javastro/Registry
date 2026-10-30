@@ -191,34 +191,8 @@ public class XMLUtils {
       return sw.toString();
    }
 
-   public String serializeRecords(List<RecordType> records) throws IOException, SAXException, TransformerException {
-      Document resourcesDOM = docBuilder.parse(XMLUtils.class.getResourceAsStream("/VOResourcesBase.xml"));
-      for(RecordType r : records) {
-         if(r.getMetadata()!=null && r.getMetadata().getAny() instanceof Node resourceNode) {
-            Node imported = resourcesDOM.importNode(resourceNode, true);
-            resourcesDOM.getDocumentElement().appendChild(imported);
-         }
-      }
-      StringWriter writer = new StringWriter();
-      Transformer transformer = TransformerFactory.newInstance().newTransformer();
-      transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-      transformer.transform(new DOMSource(resourcesDOM), new StreamResult(writer));
-      return writer.toString();
-   }
 
-   public String serializeRecord(RecordType r) throws TransformerException {
-      if(r.getMetadata()!=null && r.getMetadata().getAny() instanceof Node resourceNode) {
-         StringWriter writer = new StringWriter();
-         Transformer transformer = TransformerFactory.newInstance().newTransformer();
-         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-         transformer.transform(new DOMSource(resourceNode), new StreamResult(writer));
-         return writer.toString();
-      }
-      else{
-         log.warn("record has no metadata or metadata is not a Node, cannot serialize: {}", r.getHeader().getIdentifier());
-         return "";
-      }
-   }
+
 
    public Resource OaiMetadataToResource(RecordType oai) {
 
