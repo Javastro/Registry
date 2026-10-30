@@ -30,4 +30,4 @@ The BaseX database location defaults to the BaseX home directory (shown in the s
 `BaseX home directory=...`). Set the Java system property `org.basex.path` to place it explicitly, and make sure it is on
 persistent storage. Only one process can open the database at a time.
 
-To include the optional relational mode see {doc}`regtap`.
+To include the optional relational mode see {doc}`regtap-admin`.

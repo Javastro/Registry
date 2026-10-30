@@ -9,5 +9,5 @@
 | `/graphql` | GraphQL endpoint (UI included) | none |
 | `/admin/strictAdd` | Add content | `update` |
 | `/harvesting/*` | Harvest administration, see {doc}`harvesting` | `update` |
-| `/tap/*` | RegTAP (only when enabled) | see {doc}`regtap` |
+| `/tap/*` | RegTAP (only when enabled) | see {doc}`regtap-admin` |
 | `/q/swagger-ui/`, `/q/dev/` | Swagger UI and Dev UI (development mode) | - |

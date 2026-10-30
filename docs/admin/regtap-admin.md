@@ -1,4 +1,4 @@
-# RegTAP (optional)
+# RegTAP Admin (optional)
 
 The relational RegTAP service (PostgreSQL, Hibernate ORM and the `/tap/*` endpoints) is **not** part of the default
 build. It is selected when the application is built (see {doc}`../developer/regtap-build`):

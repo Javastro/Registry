@@ -6,7 +6,7 @@ A deployed registry consists of a single Quarkus application containing:
 * the OAI-PMH endpoint (`/oai`) that other registries harvest from;
 * admin endpoints (HTTP Basic auth) for adding content and managing harvesting;
 * a scheduled harvester that copies records from other registries, starting from the Registry of Registries (RofR);
-* optionally, a PostgreSQL-backed RegTAP service (see {doc}`regtap`).
+* optionally, a PostgreSQL-backed RegTAP service (see {doc}`regtap-admin`).
 
 On first start the registry creates two records for itself: the authority (`ivo://<authority>`) and the registry
 description (`ivo://<authority>/Registry`). Change `ivoa.registry.authority` before publishing anything.
