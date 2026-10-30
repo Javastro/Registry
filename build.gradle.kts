@@ -82,3 +82,23 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.compilerArgs.add("-parameters")
 }
+
+// Documentation site: Sphinx (docs/) plus Javadoc, assembled in build/site. Use -Pregtap to include the RegTAP classes in the Javadoc.
+// Requires sphinx (pip install -r docs/requirements.txt); override the executable with -PsphinxBuild=/path/to/sphinx-build
+val sphinxHtml by tasks.registering(Exec::class) {
+    group = "documentation"
+    description = "Builds the Sphinx HTML documentation"
+    val sphinx = (project.findProperty("sphinxBuild") as String?) ?: "sphinx-build"
+    inputs.dir("docs")
+    outputs.dir(layout.buildDirectory.dir("site"))
+    commandLine(sphinx, "-W", "-b", "html", "docs", layout.buildDirectory.dir("site").get().asFile.path)
+}
+
+val docsSite by tasks.registering(Copy::class) {
+    group = "documentation"
+    description = "Assembles the documentation site (Sphinx + Javadoc under api/) in build/site"
+    dependsOn(sphinxHtml)
+    dependsOn(tasks.javadoc)
+    from(tasks.javadoc.map { it.destinationDir!! }) { into("api") }
+    into(layout.buildDirectory.dir("site"))
+}

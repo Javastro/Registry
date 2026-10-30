@@ -53,6 +53,13 @@ Enable it by adding the `regtap` Quarkus profile, which can be combined with the
 
 The profile is applied at build time, so a packaged application is either with or without RegTAP.
 
+## Documentation
+
+Administrator and developer documentation (Sphinx, with Javadoc) is published at https://javastro.github.io/Registry/ ; the sources are in `docs/`. Build locally with
+```shell
+pip install -r docs/requirements.txt && ./gradlew docsSite -Pregtap   # site in build/site
+```
+
 ## Running in Docker
 
 An image called `javastro/publishing-registry` will be created and run with
