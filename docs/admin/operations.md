@@ -1,5 +1,8 @@
 # Operations
 
+managing {doc}`harvesting` is described in more detail in its own page.
+
+
 ## Storage and backup
 
 All state is in the BaseX database directory (see {doc}`installation`) and the harvest cache directory. Stop the
