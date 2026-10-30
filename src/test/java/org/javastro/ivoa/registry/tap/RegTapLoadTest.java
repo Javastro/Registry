@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
+@io.quarkus.test.junit.TestProfile(RegTapTestProfile.class)
 class RegTapLoadTest {
 
    private static io.restassured.specification.RequestSpecification admin() {

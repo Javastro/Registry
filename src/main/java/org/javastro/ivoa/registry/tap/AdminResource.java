@@ -16,6 +16,7 @@ import org.javastro.ivoa.registry.Registry;
 
 import java.net.URI;
 
+@io.quarkus.arc.profile.IfBuildProfile("regtap")
 @Path("tap/admin")
 @Tag(name = "TAP Administration", description = """
         perform TAP administration on the Registry - this will typically

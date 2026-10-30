@@ -40,6 +40,7 @@ import java.util.List;
 /*
  * Created on 03/03/2026 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
+@io.quarkus.arc.profile.IfBuildProfile("regtap")
 @ApplicationScoped
 public class TapConfiguration {
 

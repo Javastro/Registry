@@ -19,6 +19,7 @@ import org.javastro.ivoacore.tap.schema.SchemaProvider;
  * Created on 03/03/2026 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 @Tag(name="Table", description = "the standard VOSI Tables endpoint")
+@io.quarkus.arc.profile.IfBuildProfile("regtap")
 @Path("tap/tables")
 public class VOSITablesResource {
 

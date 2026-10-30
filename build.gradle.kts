@@ -12,12 +12,25 @@ repositories {
 
 }
 
+// RegTAP is enabled with -Pregtap, or by including "regtap" in the quarkus profile (-Dquarkus.profile=prod,regtap or QUARKUS_PROFILE)
+val regtap: Boolean = project.hasProperty("regtap") ||
+        (System.getProperty("quarkus.profile") ?: System.getenv("QUARKUS_PROFILE") ?: "")
+                .split(",").map { it.trim() }.contains("regtap")
+
+sourceSets {
+    if (!regtap) {
+        main { java.exclude("org/javastro/ivoa/registry/tap/**") }
+        test { java.exclude("org/javastro/ivoa/registry/tap/**") }
+    }
+}
+
 dependencies {
  //   implementation("io.quarkiverse.helm:quarkus-helm:1.2.3")
     implementation("org.javastro.ivoa:ivoa-entities:0.9.15")
     implementation("org.basex:basex-api:12.4")
     implementation("org.xmlresolver:xmlresolver:6.0.18")
     implementation("net.sf.saxon:Saxon-HE:12.5") // for xslt 3.0
+    implementation("org.json:json:20240303") // was previously only available transitively via the TAP libraries
     implementation("io.quarkus:quarkus-rest-client-jackson")
     implementation("io.quarkus:quarkus-rest-client-jaxb")
     implementation("io.quarkus:quarkus-elytron-security-properties-file")
@@ -29,14 +42,15 @@ dependencies {
     implementation("io.quarkus:quarkus-scheduler")
     implementation("io.quarkus:quarkus-arc")
     implementation("io.quarkus:quarkus-smallrye-graphql")
-//TAP
-    implementation("io.quarkus:quarkus-hibernate-orm")
-    implementation("io.quarkus:quarkus-jdbc-postgresql")
-    implementation("org.javastro.ivoa.core.quarkus:quarkus-tap-lib:0.9.0")
-    implementation("org.javastro.ivoa.core:tap:0.9.2") // TODO should make this transitively available via quarkus-tap-lib
-    implementation("org.javastro.ivoa.dm:RegTAPDM:0.9")
-    implementation("org.javastro.ivoa.core:dal:0.9.1")
-
+//TAP - the relational RegTAP mechanism is only built when the regtap profile (or -Pregtap) is selected
+    if (regtap) {
+        implementation("io.quarkus:quarkus-hibernate-orm")
+        implementation("io.quarkus:quarkus-jdbc-postgresql")
+        implementation("org.javastro.ivoa.core.quarkus:quarkus-tap-lib:0.9.0")
+        implementation("org.javastro.ivoa.core:tap:0.9.2") // TODO should make this transitively available via quarkus-tap-lib
+        implementation("org.javastro.ivoa.dm:RegTAPDM:0.9")
+        implementation("org.javastro.ivoa.core:dal:0.9.1")
+    }
 //END TAP
 
  //   implementation("io.quarkus:quarkus-kubernetes")

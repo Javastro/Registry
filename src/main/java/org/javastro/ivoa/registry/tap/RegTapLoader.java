@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 /**
  * Loads the XML registry content into the RegTAP relational tables using the RegTAPDM library.
  */
+@io.quarkus.arc.profile.IfBuildProfile("regtap")
 @ApplicationScoped
 public class RegTapLoader {
    private static final Logger log = LoggerFactory.getLogger(RegTapLoader.class);

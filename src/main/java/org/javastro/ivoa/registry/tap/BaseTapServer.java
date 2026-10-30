@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 /*
  * Created on 28/08/2025 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
+@io.quarkus.arc.profile.IfBuildProfile("regtap")
 @ApplicationScoped
 public class BaseTapServer  {
    private static final Logger log = LoggerFactory.getLogger(BaseTapServer.class);

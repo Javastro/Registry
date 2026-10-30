@@ -41,6 +41,17 @@ to specify a cache directory for the harvesting process, set the following envir
 IVOA_HARVESTING_CACHE=/path/to/cache/directory
 ```
 
+### RegTAP (optional)
+
+The relational [RegTAP mechanism](https://www.ivoa.net/documents/RegTAP/) (PostgreSQL, Hibernate ORM and the `/tap/*` endpoints) is disabled by default.
+Enable it by adding the `regtap` Quarkus profile, which can be combined with the standard ones:
+
+```shell
+./gradlew quarkusDev -Dquarkus.profile=dev,regtap
+./gradlew quarkusBuild -Dquarkus.profile=prod,regtap
+```
+
+The profile is applied at build time, so a packaged application is either with or without RegTAP.
 
 ## Running in Docker
 
@@ -58,7 +69,7 @@ Helm chart will be generated in `build/helm`
 
 ## Environment variables
 ```shell
-# Only effects helm chart generation
+# Only affects helm chart generation
 ENABLE_MONITORING - enable prometheus metrics (true/false), false by default
 ```
 

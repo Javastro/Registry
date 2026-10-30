@@ -18,6 +18,7 @@ import org.javastro.ivoa.registry.Registry;
 import java.util.List;
 
 @Tag(name="VOSI", description = "specific VOSI endpoints just for TAP")
+@io.quarkus.arc.profile.IfBuildProfile("regtap")
 @Path("tap/VOSI")
 public class VOSIResource {
    @Inject

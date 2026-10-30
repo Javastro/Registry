@@ -18,6 +18,7 @@ import org.javastro.ivoa.quarkus.tap.TAPHelper;
  * Created on 04/03/2026 by Paul Harrison (paul.harrison@manchester.ac.uk).
  */
 @Tag(name="TAP Query", description = "the TAP query endpoints")
+@io.quarkus.arc.profile.IfBuildProfile("regtap")
 @ApplicationScoped
 @Path("tap/async")
 public class AsyncQueryResource extends BaseAsyncTAPResource {
