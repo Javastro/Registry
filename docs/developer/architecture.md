@@ -8,6 +8,8 @@
 * REST resources: `OaiPMHResource`, `XQueryResource`, `ResourceResource`, `VOSIResource`, `AdminResource`, `HarvestAdminResource`.
 * `registry.tap` - optional RegTAP classes, see {doc}`regtap-build`.
 
-Domain classes come from the external `org.javastro.ivoa:ivoa-entities` library.
+XML Domain classes and schema come from the external [`org.javastro.ivoa:ivoa-entities`]()https://github.com/Javastro/ivoa-entities library.
+
+RegTAP is defined as a VO-DML model in [RegTAP github](https://ivoa.github.io/RegTAPDM/) which in turn uses the libraries in [ivoa-core](https://javastro.github.io/ivoacore/) and [quarkusIVOA](https://github.com/Javastro/quarkusIVOA) to build the interface with little code in this repo.
 
 API documentation: [Javadoc](../api/index.html).
