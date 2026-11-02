@@ -2,6 +2,7 @@
 {@org.javastro.ivoa.registry.RegistryConfig registryConfig}
 {@org.javastro.ivoa.quarkus.config.RegistrationMetadata meta}
 {@org.javastro.ivoa.registry.harvesting.HarvestingConfig harvesting}
+{@org.javastro.ivoa.registry.ui.RegistrySummary$Summary summary}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,8 +12,29 @@
 <body>
 <h1>IVOA Registry</h1>
 
-<p> <a href="/q/swagger-ui/">OpenAPI UI:</a></p>
-<p> <a href="/q/graphql-ui/">GraphQL UI:</a></p>
+<p>An IVOA publishing registry. Records are held in a BaseX XML database and served through OAI-PMH
+    (metadata prefixes <code>ivo_vor</code> and <code>oai_dc</code>); it can also harvest other registries.</p>
+
+<h2>Endpoints</h2>
+<ul>
+    <li><a href="/oai?verb=Identify">OAI-PMH</a> (<code>/oai</code>)</li>
+    <li><a href="/VOSI/capabilities">VOSI capabilities</a></li>
+    <li><a href="/q/swagger-ui/">OpenAPI UI</a></li>
+    <li><a href="/q/graphql-ui/">GraphQL UI</a></li>
+    {#if summary.regtap}<li><a href="/tap/VOSI/capabilities">RegTAP</a> (<code>/tap</code>)</li>{/if}
+</ul>
+
+<h2>Registry content</h2>
+<dl>
+    <dt>Published (managed) records</dt>
+    <dd>{summary.managedRecords}</dd>
+    <dt>Harvested records</dt>
+    <dd>{summary.harvestedRecords}</dd>
+    <dt>Harvest sources</dt>
+    <dd>{summary.sources}{#if !summary.sourcesByStatus.isEmpty()} ({#for e in summary.sourcesByStatus}{e.key}: {e.value}{#if e_hasNext}, {/if}{/for}){/if}</dd>
+    <dt>RegTAP relational interface</dt>
+    <dd>{#if summary.regtap}enabled{#else}not enabled{/if}</dd>
+</dl>
 
 <h2>Registry configuration</h2>
 <dl>
@@ -24,6 +46,12 @@
     <dd>{harvesting.cron()}</dd>
     <dt>RofR source</dt>
     <dd>{harvesting.rofrUrl()}</dd>
+    <dt>Use local RofR catalog</dt>
+    <dd>{harvesting.rofrUseLocal()}</dd>
+    <dt>Recursive discovery</dt>
+    <dd>{#if harvesting.discovery().enabled()}enabled (max sources {harvesting.discovery().maxSources()}, max depth {harvesting.discovery().maxDepth()}, max per run {harvesting.discovery().maxPerRun()}){#else}disabled{/if}</dd>
+    <dt>Harvest cache directory</dt>
+    <dd>{harvesting.cacheDir()}</dd>
 </dl>
 
 </body>

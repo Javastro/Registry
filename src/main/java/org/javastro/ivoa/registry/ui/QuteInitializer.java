@@ -26,9 +26,13 @@ public class QuteInitializer implements DataInitializer {
    @Inject
    HarvestingConfig harvesting;
 
+   @Inject
+   RegistrySummary summary;
+
    @Override
    public void initialize(InitContext ctx) {
       if (ctx.path().endsWith("index")) { // IMPL could just add these globally
+         ctx.templateInstance().data("summary", summary.summary());
          ctx.templateInstance().data("baseURL", baseUrl);
          ctx.templateInstance().data("registryConfig", registryConfig);
          ctx.templateInstance().data("meta", registrationMetadata);
